@@ -158,3 +158,17 @@ def make_room_heat_env(
     )
     return make(env_id)
 
+
+from i4b.gym_interface.config import (  # noqa: E402
+    build_randomization_events,
+    get_config_section,
+    load_yaml_config,
+    make_env_from_config,
+    make_room_heat_env_from_config,
+    make_room_heat_vec_env_from_config,
+)
+from i4b.gym_interface.framework_export import (  # noqa: E402
+    jax_to_torch,
+    jax_to_tf,
+    jax_to_cupy,
+)
