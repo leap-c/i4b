@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-import src.models.model_hvac as model_hvac
-from src.simulator import Model_simulator
-from src.models.model_buildings import Building
-from src.gym_interface import BUILDING_NAMES2CLASS
-from src.gym_interface.constant import OBSERVATION_SPACE_LIMIT
-from src.disturbances import load_weather, get_solar_gains, get_int_gains
+import i4b.models.model_hvac as model_hvac
+from i4b.simulator import Model_simulator
+from i4b.models.model_buildings import Building
+from i4b.gym_interface import BUILDING_NAMES2CLASS
+from i4b.gym_interface.constant import OBSERVATION_SPACE_LIMIT
+from i4b.disturbances import load_weather, get_solar_gains, get_int_gains
 
 
 class RoomHeatEnv(gym.Env):   

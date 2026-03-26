@@ -2,8 +2,8 @@ import casadi as cas
 import numpy as np
 
 
-import src.controller.mpc.mpc_utils as util
-import src.controller.mpc.optimization_problem as optimization_problem
+import i4b.controller.mpc.mpc_utils as util
+import i4b.controller.mpc.optimization_problem as optimization_problem
 
 
 class MPC_solver:

@@ -150,10 +150,10 @@ class Model_simulator:
         """
 
         if ctrl_method == 'heatcurve':
-            from src.controller.heatcurve import heatcurve
+            from i4b.controller.heatcurve import heatcurve
             ctrl = heatcurve.Heatingcurve(T_room_set = T_room_set)
         elif ctrl_method == 'pid':
-            from src.controller.pid import pid
+            from i4b.controller.pid import pid
             ctrl = pid.PID(timestep = self.timestep, KP = kwargs['KP'], KI = kwargs['KI'], KD = kwargs['KD'])
         
         # If maximum number of steps is not defined, use length of disturbance vector
@@ -298,7 +298,7 @@ def main():
     sys.path.insert(0, root_path)
     
     
-    import src.models.model_buildings as model_buildings
+    import i4b.models.model_buildings as model_buildings
     
     # load example building data
     from data.buildings.sfh_1919_1948 import sfh_1919_1948_0_soc as building
@@ -309,7 +309,7 @@ def main():
                                           method    = '7R5C',        # For available calculation methods see: model_buildings.py.
                                           verbose   = False)
     
-    import src.models.model_hvac as model_hvac
+    import i4b.models.model_hvac as model_hvac
     
     # Initalize the heat pump model, 
     # set verbose to True, to generate a performance graph of the HP

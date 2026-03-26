@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from src.gym_interface import make_room_heat_env
+from i4b.gym_interface import make_room_heat_env
 
 def evaluate(model, env, num_episodes=5):
     returns = []

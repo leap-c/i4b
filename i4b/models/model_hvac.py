@@ -1,5 +1,5 @@
 import numpy as np
-from src.constants import C_WATER_SPEC
+from i4b.constants import C_WATER_SPEC
    
 class Heatpump:
     """ Heat pump super class
@@ -137,7 +137,7 @@ class Heatpump_Vitocal(Heatpump):
             COP
         """
         # estimation of ground temperature based on ambient temperature
-        from src.disturbances import t_ground_from_amb
+        from i4b.disturbances import t_ground_from_amb
         T_source = t_ground_from_amb(T_amb)
     
         z0 = 10.893436

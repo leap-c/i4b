@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from src.constants import RHO_WATER, RHO_AIR, C_WATER_SPEC, C_AIR_SPEC
+from i4b.constants import RHO_WATER, RHO_AIR, C_WATER_SPEC, C_AIR_SPEC
 
 # Specify material parameters
 def evaluate_results(x_arr, T_HP, T_amb, Q_HP, h=3600):   

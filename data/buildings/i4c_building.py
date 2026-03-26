@@ -1,5 +1,5 @@
 #%% i4c building - Two family house, kfw 40+
-from src.models.model_buildings import C_AIR_SPEC, RHO_AIR,C_INT_SPEC
+from i4b.models.model_buildings import C_AIR_SPEC, RHO_AIR,C_INT_SPEC
 
 # Geometry and material properties
 i4c = {"H_ve": 88.93,

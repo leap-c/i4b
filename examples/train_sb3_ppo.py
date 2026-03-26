@@ -6,7 +6,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 import torch
-from src.gym_interface import make_room_heat_env
+from i4b.gym_interface import make_room_heat_env
 
 def make_env_fn(args):
     env = make_room_heat_env(

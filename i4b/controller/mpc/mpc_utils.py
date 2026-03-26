@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 from shutil import copyfile
-from src.utils import plot
+from i4b.utils import plot
 
    
 def evaluate_mpc(hp_model,building_model,resultfile='results_mpc',resultdir=None,nsamples=0,offset=0,h=900,mfig=(10,3)):

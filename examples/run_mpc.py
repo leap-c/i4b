@@ -25,12 +25,12 @@ warnings.filterwarnings("ignore")
 root_path = str(Path(__file__).resolve().parent)
 sys.path.insert(0, root_path)
 
-import src.disturbances as disturbances
-import src.models.model_buildings as model_buildings
-import src.models.model_hvac as model_hvac
-import src.simulator as simulator
-from src.controller.mpc.casadi_framework import MPC_solver
-import src.controller.mpc.mpc_utils as util
+import i4b.disturbances as disturbances
+import i4b.models.model_buildings as model_buildings
+import i4b.models.model_hvac as model_hvac
+import i4b.simulator as simulator
+from i4b.controller.mpc.casadi_framework import MPC_solver
+import i4b.controller.mpc.mpc_utils as util
 
 
 def parse_args() -> argparse.Namespace:

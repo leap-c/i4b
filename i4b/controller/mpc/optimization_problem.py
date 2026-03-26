@@ -4,7 +4,7 @@ Created on Sun Oct 10 17:58:34 2021
 
 @author: lfrison
 """
-from src.constants import C_WATER_SPEC
+from i4b.constants import C_WATER_SPEC
 import casadi as cas
 
 class optimization_problem:

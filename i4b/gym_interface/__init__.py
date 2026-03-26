@@ -1,6 +1,5 @@
 from gymnasium.envs.registration import make, pprint_registry, register, registry, spec
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from data.buildings.i4c_building import i4c
 from data.buildings.sfh_1919_1948 import sfh_1919_1948_1_enev, sfh_1919_1948_2_kfw, sfh_1919_1948_0_soc
 from data.buildings.sfh_1949_1957 import sfh_1949_1957_1_enev, sfh_1949_1957_2_kfw, sfh_1949_1957_0_soc
