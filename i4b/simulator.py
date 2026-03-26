@@ -301,7 +301,7 @@ def main():
     import i4b.models.model_buildings as model_buildings
     
     # load example building data
-    from data.buildings.sfh_1919_1948 import sfh_1919_1948_0_soc as building
+    from i4b_data.buildings.sfh_1919_1948 import sfh_1919_1948_0_soc as building
     
     # Initialize the building model
     bldg_model = model_buildings.Building(params    = building, # More example buildings can be found in data/buildings/.

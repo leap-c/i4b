@@ -1,16 +1,16 @@
 from gymnasium.envs.registration import make, pprint_registry, register, registry, spec
 
-from data.buildings.i4c_building import i4c
-from data.buildings.sfh_1919_1948 import sfh_1919_1948_1_enev, sfh_1919_1948_2_kfw, sfh_1919_1948_0_soc
-from data.buildings.sfh_1949_1957 import sfh_1949_1957_1_enev, sfh_1949_1957_2_kfw, sfh_1949_1957_0_soc
-from data.buildings.sfh_1958_1968 import sfh_1958_1968_1_enev, sfh_1958_1968_2_kfw, sfh_1958_1968_0_soc
-from data.buildings.sfh_1969_1978 import sfh_1969_1978_1_enev, sfh_1969_1978_2_kfw, sfh_1969_1978_0_soc
-from data.buildings.sfh_1979_1983 import sfh_1979_1983_1_enev, sfh_1979_1983_2_kfw, sfh_1979_1983_0_soc
-from data.buildings.sfh_1984_1994 import sfh_1984_1994_1_enev, sfh_1984_1994_2_kfw, sfh_1984_1994_0_soc
-from data.buildings.sfh_1995_2001 import sfh_1995_2001_1_enev, sfh_1995_2001_2_kfw, sfh_1995_2001_0_soc
-from data.buildings.sfh_2002_2009 import sfh_2002_2009_1_enev, sfh_2002_2009_2_kfw, sfh_2002_2009_0_soc
-from data.buildings.sfh_2010_2015 import sfh_2010_2015_1_enev, sfh_2010_2015_2_kfw, sfh_2010_2015_0_soc
-from data.buildings.sfh_2016_now import sfh_2016_now_1_enev, sfh_2016_now_2_kfw, sfh_2016_now_0_soc
+from i4b_data.buildings.i4c_building import i4c
+from i4b_data.buildings.sfh_1919_1948 import sfh_1919_1948_1_enev, sfh_1919_1948_2_kfw, sfh_1919_1948_0_soc
+from i4b_data.buildings.sfh_1949_1957 import sfh_1949_1957_1_enev, sfh_1949_1957_2_kfw, sfh_1949_1957_0_soc
+from i4b_data.buildings.sfh_1958_1968 import sfh_1958_1968_1_enev, sfh_1958_1968_2_kfw, sfh_1958_1968_0_soc
+from i4b_data.buildings.sfh_1969_1978 import sfh_1969_1978_1_enev, sfh_1969_1978_2_kfw, sfh_1969_1978_0_soc
+from i4b_data.buildings.sfh_1979_1983 import sfh_1979_1983_1_enev, sfh_1979_1983_2_kfw, sfh_1979_1983_0_soc
+from i4b_data.buildings.sfh_1984_1994 import sfh_1984_1994_1_enev, sfh_1984_1994_2_kfw, sfh_1984_1994_0_soc
+from i4b_data.buildings.sfh_1995_2001 import sfh_1995_2001_1_enev, sfh_1995_2001_2_kfw, sfh_1995_2001_0_soc
+from i4b_data.buildings.sfh_2002_2009 import sfh_2002_2009_1_enev, sfh_2002_2009_2_kfw, sfh_2002_2009_0_soc
+from i4b_data.buildings.sfh_2010_2015 import sfh_2010_2015_1_enev, sfh_2010_2015_2_kfw, sfh_2010_2015_0_soc
+from i4b_data.buildings.sfh_2016_now import sfh_2016_now_1_enev, sfh_2016_now_2_kfw, sfh_2016_now_0_soc
 
 BUILDING_NAMES2CLASS = {
     "sfh_1919_1948_0_soc": sfh_1919_1948_0_soc,

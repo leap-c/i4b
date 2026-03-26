@@ -107,7 +107,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def select_building(building_name: str):
-    """Load building parameters from data.buildings module.
+    """Load building parameters from i4b_data.buildings module.
     
     Parameters
     ----------
@@ -132,7 +132,7 @@ def select_building(building_name: str):
       - XXXX_YYYY: construction period
       - Z: 0 (soc), 1 (enev), 2 (kfw)
     """
-    import data.buildings
+    import i4b_data.buildings
     
     # Support legacy format "module:attribute" for backward compatibility
     if ":" in building_name:
@@ -327,7 +327,7 @@ def main() -> None:
     # Internal gains
     int_gains_df = disturbances.get_int_gains(
         time=weather_df.index,
-        profile_path='data/profiles/InternalGains/ResidentialDetached.csv',
+        profile_path='i4b_data/profiles/InternalGains/ResidentialDetached.csv',
         bldg_area=building_params['area_floor']
     )
 
@@ -346,7 +346,7 @@ def main() -> None:
     data_grid = np.ones(Qdot_sol.shape[0])
     if args.grid_on:
         grid_df = pd.read_csv(
-            'data/grid/grid_signals.csv',
+            'i4b_data/grid/grid_signals.csv',
             sep=',',
             header='infer'
         )

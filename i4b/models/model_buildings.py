@@ -930,7 +930,7 @@ class Building:
 
 if __name__ == "__main__":
     # load example building data
-    from data.buildings.sfh_58_68_geg import sfh_58_68_geg
+    from i4b_data.buildings.sfh_58_68_geg import sfh_58_68_geg
 
     # Initialize the building model
     building = sfh_58_68_geg
