@@ -17,6 +17,7 @@ class Building:
     Different calculation methods are available to model the heat flows of the building and an underfloor heating system in a dynamic way (2R2C, 4R3C, 5R4C).
     Ordinary differential equations (ODEs) are used to model the respective thermal networks, containing different thermal resistances (R) and capacities (C).
     The ODEs are transformed into state space equations in the form :math:`\dot{x} = A \cdot x + B \cdot u` and :math:`y = C \cdot x + D \cdot u` with:
+
         - A : System matrix
         - B : Control matrix
         - C : Output matrix
@@ -29,6 +30,7 @@ class Building:
     
     The required input parameters for the chosen calculation method are computed while initializing the building model,
     using the input parameters of the individual building and the following general constants:
+
         - C_INT_SPEC = 10000 J/m^2/K    : Spec heat capacitiy of interior acc. to ISO52016 Tab. B17
         - H_UFH_SPEC = 4.4 W/m^2/K      : Spec heat transmission coefficient for underfloor heating acc. to `Daniel Rüdiser <https://www.htflux.com/en/dynamic-simulation-and-comparison-of-two-underfloor-heating-systems/>`_
         - H_UFH_SURF_SPEC = 10.8 W/m^2/K : Spec heat convection from floor to air with underfloor heating system acc to EN 1264-5
@@ -84,8 +86,8 @@ class Building:
             - :math:`C_{int}`                       (C_int)        : Heat capacity of the interior [J/K]
             - :math:`C_{water}`                     (C_water)      : Heat capacity of the water in the hvac system [J/K]
             - :math:`C_{surf}`                      (C_surf)       : Heat capacity fo the inside envelope surface [J/K]
-            - :math:`C_{surf_wall}                  (C_surf_wall)  : Heat capacitiy of the wall surface
-            - :math:`C_{surf_floor}                 (C_surf_floor) : Heat capacitiy of the floor surface
+            - :math:`C_{surf,wall}`                 (C_surf_wall)  : Heat capacitiy of the wall surface
+            - :math:`C_{surf,floor}`                (C_surf_floor) : Heat capacitiy of the floor surface
             - :math:`C_{bldg,heavy}`                (C_bldg_heavy) : Heat capacity of the heavy building components, excluding the inside envelope surface [J/K]
             - :math:`A_{surf}`                      (A_surf)       : Internal surface area [m^2]
             - :math:`A_{mass}`                      (A_mass)       : Internal surface area of the heavy building components [m^2] 

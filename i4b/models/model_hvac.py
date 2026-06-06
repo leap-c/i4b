@@ -207,6 +207,7 @@ class Heatpump_AW(Heatpump):
         -----
         The parameterization of the heat pump model was based on the manufacturer data of the Dimplex LA 6TU air-water heat pump.
         This model was selected because it is listed in the BAFA list and ranks in the middle range regarding COP.
+
             - Return temperature min. / Supply temperature max. 18 / 60 °C +/- 2
             - Lower operating limit heat source (heating mode) / Upper operating limit heat source (heating mode) -22 / 35 °C
             - Heating capacity from 2.28..8.04 kW

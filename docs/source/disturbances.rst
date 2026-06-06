@@ -15,7 +15,7 @@ The datetime index is needed to generate the internal- and solar heat gain profi
 For the solar heat gains profiles the weather df additionally has to contain information about the solar irradiation.
 
 
-.. automodule:: disturbances 
+.. automodule:: i4b.disturbances
    :members:
    :undoc-members:
    :show-inheritance:

@@ -31,7 +31,7 @@ More buildings can be added by creating separate .py files containing a dictiona
 
 
 
-.. automodule:: model_buildings 
+.. automodule:: i4b.models.model_buildings
    :members:
    :undoc-members:
    :show-inheritance:

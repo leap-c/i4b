@@ -12,8 +12,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
-print(os.listdir())
+# Make the i4b package importable for autodoc even from a non-installed
+# checkout. This points at external/i4b/ (two levels up from this file).
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # -- Project information -----------------------------------------------------
 

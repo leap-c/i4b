@@ -133,7 +133,7 @@ class Model_simulator:
             Number of simulation steps. If not specified, the length of the disturbance vector is used.
 
         **kwargs
-            If ctrl == "pid": **kwargs = 
+            If ctrl == "pid": ``**kwargs`` =
                 - KP (float) : Proportional control gain
                 - KI (float) : Integrative control gain
                 - KD (float) : Differential control gain

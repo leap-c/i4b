@@ -2,7 +2,7 @@ Simulator
 =========
 
 
-.. automodule:: simulator 
+.. automodule:: i4b.simulator
    :members:
    :undoc-members:
    :show-inheritance:
