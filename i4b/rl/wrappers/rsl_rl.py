@@ -19,8 +19,8 @@ to the actor at deployment time.
 
 Usage::
 
-    from src.gym_interface.vec_env import RoomHeatVecEnv
-    from src.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
 
     jax_env = RoomHeatVecEnv(num_envs=4096, ..., device="gpu")
 
@@ -41,7 +41,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 import torch
 
-from src.rl.wrappers.base import I4bVecEnvWrapper
+from i4b.rl.wrappers.base import I4bVecEnvWrapper
 
 
 class RslRlVecEnvWrapper(I4bVecEnvWrapper):

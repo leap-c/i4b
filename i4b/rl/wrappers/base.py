@@ -17,8 +17,8 @@ to its actions over time.
 
 Typical usage::
 
-    from src.gym_interface.vec_env import RoomHeatVecEnv
-    from src.rl.wrappers.base import I4bVecEnvWrapper
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.rl.wrappers.base import I4bVecEnvWrapper
 
     jax_env = RoomHeatVecEnv(num_envs=4096, ..., device="gpu")
 
@@ -41,7 +41,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import torch
 
-from src.gym_interface.framework_export import jax_to_torch
+from i4b.gym_interface.framework_export import jax_to_torch
 
 # Building parameter keys available as privileged observations.
 # These are scalar values from env_params that describe the building's

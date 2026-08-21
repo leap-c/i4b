@@ -25,8 +25,8 @@ from typing import Dict, Optional
 import torch
 import torch.nn.functional as F
 
-from src.rl.algorithms.sac import SACActorCritic
-from src.rl.storage.replay_buffer import GPUReplayBuffer, ReplayBufferSamples
+from i4b.rl.algorithms.sac import SACActorCritic
+from i4b.rl.storage.replay_buffer import GPUReplayBuffer, ReplayBufferSamples
 
 
 @dataclass

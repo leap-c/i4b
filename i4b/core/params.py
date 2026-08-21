@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 
 import numpy as np
 
-from src.constants import (
+from i4b.constants import (
     RHO_WATER, RHO_AIR, C_WATER_SPEC, C_AIR_SPEC,
     C_INT_SPEC, H_UFH_SPEC, H_UFH_SURF_SPEC, V_TS_SPEC, V_UFH_SPEC,
     R_SI, H_TR_INT, H_AIR2SURF,

@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from src.rl.algorithms.actor_critic import ActorCritic
+from i4b.rl.algorithms.actor_critic import ActorCritic
 
 
 @dataclass

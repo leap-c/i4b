@@ -12,13 +12,13 @@ Modules:
     utils      — Running statistics, normalization helpers.
 """
 
-from src.rl.wrappers.base import I4bVecEnvWrapper
-from src.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
-from src.rl.storage.rollout_storage import RolloutStorage
-from src.rl.algorithms.actor_critic import ActorCritic, SafeActorCritic
-from src.rl.algorithms.ppo import PPO
-from src.rl.algorithms.ppo_lag import PPOLag
-from src.rl.runners.on_policy_runner import OnPolicyRunner
+from i4b.rl.wrappers.base import I4bVecEnvWrapper
+from i4b.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
+from i4b.rl.storage.rollout_storage import RolloutStorage
+from i4b.rl.algorithms.actor_critic import ActorCritic, SafeActorCritic
+from i4b.rl.algorithms.ppo import PPO
+from i4b.rl.algorithms.ppo_lag import PPOLag
+from i4b.rl.runners.on_policy_runner import OnPolicyRunner
 
 __all__ = [
     "I4bVecEnvWrapper",

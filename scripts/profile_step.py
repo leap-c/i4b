@@ -12,7 +12,7 @@ _repo_root_str = str(_REPO_ROOT)
 if _repo_root_str not in sys.path:
     sys.path.insert(0, _repo_root_str)
 
-from src.gym_interface.vec_env import RoomHeatVecEnv
+from i4b.gym_interface.vec_env import RoomHeatVecEnv
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
         hp_model="Heatpump_AW",
         method="4R3C",
         mdot_HP=0.25,
-        internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=2,
         backend="jax",

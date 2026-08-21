@@ -207,7 +207,7 @@ Python API
 
 .. code-block:: python
 
-   from src.randomization import EventSpec, uniform, loguniform, normal
+   from i4b.randomization import EventSpec, uniform, loguniform, normal
 
    events = [
        # Vary insulation at the start of each episode
@@ -228,7 +228,7 @@ Python API
        ),
    ]
 
-   from src.gym_interface.vec_env import RoomHeatVecEnv
+   from i4b.gym_interface.vec_env import RoomHeatVecEnv
 
    env = RoomHeatVecEnv(
        num_envs=1024,
@@ -290,6 +290,6 @@ Events can also be specified entirely in YAML:
 
 .. code-block:: python
 
-   from src.gym_interface.config import make_env_from_config
+   from i4b.gym_interface.config import make_env_from_config
 
    env = make_env_from_config("path/to/config.yaml")

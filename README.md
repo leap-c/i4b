@@ -77,7 +77,7 @@ print(jax.devices())  # should show CudaDevice
 Use `RoomHeatEnv` for prototyping, debugging, or integration with frameworks that expect a single Gymnasium env (e.g. Stable-Baselines3).
 
 ```python
-from src.gym_interface import make_room_heat_env
+from i4b.gym_interface import make_room_heat_env
 
 env = make_room_heat_env(
     building="sfh_2016_now_0_soc",
@@ -115,8 +115,8 @@ Use `RoomHeatVecEnv` for GPU-parallel training. All arrays stay on device — no
 
 ```python
 import jax.numpy as jnp
-from src.gym_interface.vec_env import RoomHeatVecEnv
-from src.gym_interface import jax_to_torch  # optional: zero-copy to PyTorch
+from i4b.gym_interface.vec_env import RoomHeatVecEnv
+from i4b.gym_interface import jax_to_torch  # optional: zero-copy to PyTorch
 
 env = RoomHeatVecEnv(
     num_envs=4096,
@@ -189,7 +189,7 @@ The vectorized env stores only **unique disturbance profiles** in GPU memory reg
 `RoomHeatVecEnv` is the primary interface for GPU-parallel RL training. All state, parameter, and disturbance arrays live on-device between calls; no host-device transfers occur during rollout.
 
 ```python
-from src.gym_interface.vec_env import RoomHeatVecEnv
+from i4b.gym_interface.vec_env import RoomHeatVecEnv
 
 env = RoomHeatVecEnv(
     num_envs=4096,
@@ -267,8 +267,8 @@ GPU vs CPU at peak (scan, 65K envs): **~30x faster**.
 Parameter randomization can be applied at episode start, on reset, or at fixed intervals using `EventSpec` objects.
 
 ```python
-from src.randomization import EventSpec
-from src.randomization.events import uniform, loguniform
+from i4b.randomization import EventSpec
+from i4b.randomization.events import uniform, loguniform
 
 events = [
     # Randomize insulation at episode start
@@ -296,7 +296,7 @@ Parameters that only affect cost/control logic (`T_amb_lim`, `T_offset`, `T_room
 JAX GPU arrays can be shared with PyTorch, TensorFlow, or CuPy **without any CPU round-trip** via the DLPack protocol.
 
 ```python
-from src.gym_interface import jax_to_torch, jax_to_tf, jax_to_cupy
+from i4b.gym_interface import jax_to_torch, jax_to_tf, jax_to_cupy
 
 obs_seq, reward_seq, info = env.rollout(actions_seq)
 
@@ -350,7 +350,7 @@ JAX_PLATFORMS=cuda python examples/benchmark_rollout.py \
 For single-environment use, `RoomHeatEnv` provides a standard Gymnasium interface:
 
 ```python
-from src.gym_interface import make_room_heat_env
+from i4b.gym_interface import make_room_heat_env
 
 env = make_room_heat_env(
     building="sfh_2016_now_0_soc",
@@ -411,7 +411,7 @@ domain_randomization:
 ```
 
 ```python
-from src.gym_interface.config import make_env_from_config
+from i4b.gym_interface.config import make_env_from_config
 
 env = make_env_from_config("examples/configs/roomheat_vec.yaml")
 ```
@@ -422,7 +422,7 @@ env = make_env_from_config("examples/configs/roomheat_vec.yaml")
 
 ## GPU-Native PPO Training
 
-The `src/rl/` module provides a self-contained, RSL-RL-compatible training stack that runs entirely on GPU. No CPU staging occurs between the JAX environment and the PyTorch policy — observations are transferred via DLPack zero-copy.
+The `i4b/rl/` module provides a self-contained, RSL-RL-compatible training stack that runs entirely on GPU. No CPU staging occurs between the JAX environment and the PyTorch policy — observations are transferred via DLPack zero-copy.
 
 ### Reward function
 
@@ -437,11 +437,11 @@ where `comfort_deviation` (`dev_sum`) measures how far the room temperature fall
 ### Minimal training example
 
 ```python
-from src.gym_interface.vec_env import RoomHeatVecEnv
-from src.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
-from src.rl.algorithms.actor_critic import ActorCritic
-from src.rl.algorithms.ppo import PPO, PPOConfig
-from src.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
+from i4b.gym_interface.vec_env import RoomHeatVecEnv
+from i4b.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
+from i4b.rl.algorithms.actor_critic import ActorCritic
+from i4b.rl.algorithms.ppo import PPO, PPOConfig
+from i4b.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
 
 # 1. JAX environment on GPU
 jax_env = RoomHeatVecEnv(

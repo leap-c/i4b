@@ -5,7 +5,7 @@ CPU round-trip by sharing the underlying device buffer via the DLPack protocol.
 
 Usage example::
 
-    from src.gym_interface.framework_export import jax_to_torch, jax_to_tf, jax_to_cupy
+    from i4b.gym_interface.framework_export import jax_to_torch, jax_to_tf, jax_to_cupy
 
     obs, *_ = env.step(actions)          # JAX GPU array
     obs_torch = jax_to_torch(obs)        # torch.Tensor on CUDA, zero-copy

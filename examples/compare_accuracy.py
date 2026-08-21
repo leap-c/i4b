@@ -9,7 +9,7 @@ _repo_root_str = str(_REPO_ROOT)
 if _repo_root_str not in sys.path:
     sys.path.insert(0, _repo_root_str)
 
-from src.gym_interface.room_env import RoomHeatEnv
+from i4b.gym_interface.room_env import RoomHeatEnv
 
 
 def run_env(env, steps):
@@ -31,7 +31,7 @@ def compare(setup, steps=96):
         hp_model="Heatpump_AW",
         method=method,
         mdot_HP=0.25,
-        internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=2,
         backend="legacy",
@@ -41,7 +41,7 @@ def compare(setup, steps=96):
         hp_model="Heatpump_AW",
         method=method,
         mdot_HP=0.25,
-        internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=2,
         backend="jax",

@@ -43,8 +43,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from src.rl.algorithms.actor_critic import SafeActorCritic
-from src.rl.algorithms.ppo import PPOConfig
+from i4b.rl.algorithms.actor_critic import SafeActorCritic
+from i4b.rl.algorithms.ppo import PPOConfig
 
 
 @dataclass

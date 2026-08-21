@@ -23,7 +23,7 @@ via ``src.core.integrators.linear_discretize_batch``.
 from __future__ import annotations
 from typing import Dict
 import jax.numpy as jnp
-from src.constants import C_WATER_SPEC, H_AIR2SURF, H_TR_INT
+from i4b.constants import C_WATER_SPEC, H_AIR2SURF, H_TR_INT
 
 
 def rhs_2r2c(x, u, p, params):

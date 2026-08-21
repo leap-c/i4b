@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any, Tuple
 
 import yaml
 
-from src.randomization import EventSpec
+from i4b.randomization import EventSpec
 
 if TYPE_CHECKING:
-    from src.gym_interface.room_env import RoomHeatEnv
-    from src.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.gym_interface.room_env import RoomHeatEnv
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
 
 
 def load_yaml_config(path: str | Path) -> dict[str, Any]:
@@ -119,7 +119,7 @@ def make_room_heat_env_from_config(
     overrides: Mapping[str, Any] | None = None,
 ) -> RoomHeatEnv:
     """Build RoomHeatEnv from YAML config."""
-    from src.gym_interface.room_env import RoomHeatEnv
+    from i4b.gym_interface.room_env import RoomHeatEnv
 
     cfg = _load_config(config_or_path)
     env_cfg, randomization_cfg = _split_env_and_randomization(
@@ -149,7 +149,7 @@ def make_room_heat_vec_env_from_config(
     overrides: Mapping[str, Any] | None = None,
 ) -> RoomHeatVecEnv:
     """Build RoomHeatVecEnv from YAML config."""
-    from src.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
 
     cfg = _load_config(config_or_path)
     env_cfg, randomization_cfg = _split_env_and_randomization(

@@ -14,7 +14,7 @@ observations.
 
 Usage::
 
-    from src.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
+    from i4b.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
 
     runner = OnPolicyRunner(env, algorithm, cfg=RunnerConfig(...))
     runner.learn(num_learning_iterations=1000)
@@ -29,7 +29,7 @@ from typing import Any
 
 import torch
 
-from src.rl.storage.rollout_storage import RolloutStorage
+from i4b.rl.storage.rollout_storage import RolloutStorage
 
 
 @dataclass
@@ -129,12 +129,12 @@ class OnPolicyRunner:
         self.obs_rms = None
         self.reward_rms = None
         if self.cfg.normalize_obs:
-            from src.rl.utils.running_mean_std import RunningMeanStd
+            from i4b.rl.utils.running_mean_std import RunningMeanStd
             self.obs_rms = RunningMeanStd(
                 shape=(env.num_obs,), device=self.cfg.device
             )
         if self.cfg.normalize_reward:
-            from src.rl.utils.running_mean_std import RunningMeanStd
+            from i4b.rl.utils.running_mean_std import RunningMeanStd
             self.reward_rms = RunningMeanStd(shape=(), device=self.cfg.device)
 
         self.current_iteration = 0

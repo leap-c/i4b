@@ -29,14 +29,14 @@ if str(_REPO_ROOT) not in sys.path:
 
 
 def _make_env(n_envs: int, device: str):
-    from src.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
     return RoomHeatVecEnv(
         num_envs=n_envs,
         building="sfh_2016_now_0_soc",
         hp_model="Heatpump_AW",
         method="4R3C",
         mdot_HP=0.25,
-        internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=30,           # long episode so we don't truncate during rollout
         device=device,

@@ -10,8 +10,8 @@ the RSL-RL wrapper or the native OnPolicyRunner instead.
 
 Usage::
 
-    from src.gym_interface.vec_env import RoomHeatVecEnv
-    from src.rl.wrappers.sb3 import Sb3VecEnvWrapper
+    from i4b.gym_interface.vec_env import RoomHeatVecEnv
+    from i4b.rl.wrappers.sb3 import Sb3VecEnvWrapper
 
     jax_env = RoomHeatVecEnv(num_envs=8, ..., device="cpu")
     env = Sb3VecEnvWrapper(jax_env)
@@ -26,7 +26,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 
-from src.rl.wrappers.base import I4bVecEnvWrapper
+from i4b.rl.wrappers.base import I4bVecEnvWrapper
 
 
 class Sb3VecEnvWrapper(gym.vector.VectorEnv):

@@ -29,11 +29,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.gym_interface.vec_env import RoomHeatVecEnv
-from src.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
-from src.rl.algorithms.actor_critic import ActorCritic
-from src.rl.algorithms.ppo import PPO, PPOConfig
-from src.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
+from i4b.gym_interface.vec_env import RoomHeatVecEnv
+from i4b.rl.wrappers.rsl_rl import RslRlVecEnvWrapper
+from i4b.rl.algorithms.actor_critic import ActorCritic
+from i4b.rl.algorithms.ppo import PPO, PPOConfig
+from i4b.rl.runners.on_policy_runner import OnPolicyRunner, RunnerConfig
 
 
 def main():
@@ -68,7 +68,7 @@ def main():
         hp_model="Heatpump_AW",
         method=args.method,
         mdot_HP=0.25,
-        internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=args.delta_t,
         days=args.days,
         device="gpu",

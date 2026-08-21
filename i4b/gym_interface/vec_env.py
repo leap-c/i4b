@@ -6,14 +6,14 @@ import numpy as np
 import pandas as pd
 import gymnasium as gym
 
-from src.gym_interface import BUILDING_NAMES2CLASS
-from src.gym_interface.constant import OBSERVATION_SPACE_LIMIT
-from src.disturbances import load_weather, load_weather_for_city, get_solar_gains, get_int_gains
-from src.core.params import compute_derived_params, stack_params
-from src.core.sim import JaxSimulator, LINEAR_METHODS
-from src.core.hvac import hp_params
-from src.randomization import EventManager, EventSpec
-from src.constants import C_WATER_SPEC
+from i4b.gym_interface import BUILDING_NAMES2CLASS
+from i4b.gym_interface.constant import OBSERVATION_SPACE_LIMIT
+from i4b.disturbances import load_weather, load_weather_for_city, get_solar_gains, get_int_gains
+from i4b.core.params import compute_derived_params, stack_params
+from i4b.core.sim import JaxSimulator, LINEAR_METHODS
+from i4b.core.hvac import hp_params
+from i4b.randomization import EventManager, EventSpec
+from i4b.constants import C_WATER_SPEC
 
 # Params that affect only cost/control logic, NOT the RC dynamics matrices.
 # When domain randomization touches only these keys the linear matrices (Ad, Bd, Cd)

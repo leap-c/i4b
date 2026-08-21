@@ -4,7 +4,7 @@ from typing import Dict
 
 import jax.numpy as jnp
 
-from src.constants import C_WATER_SPEC
+from i4b.constants import C_WATER_SPEC
 
 
 def t_ground_from_amb(t_ambient):

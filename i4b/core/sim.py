@@ -6,9 +6,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from src.core.dynamics import rhs_dispatch
-from src.core.integrators import vmap_integrate, diffrax_integrate_batch, jax_rk4_integrate, linear_discretize_batch
-from src.core.hvac import calc_hp, check_hp
+from i4b.core.dynamics import rhs_dispatch
+from i4b.core.integrators import vmap_integrate, diffrax_integrate_batch, jax_rk4_integrate, linear_discretize_batch
+from i4b.core.hvac import calc_hp, check_hp
 
 
 LINEAR_METHODS = {"2R2C", "4R3C", "5R4C", "6R4C", "7R5C"}
