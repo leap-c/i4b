@@ -78,7 +78,7 @@ def generate_disturbances_all(building_model, year=2015, timestep=900, offset_da
    # 2. Generate absolute heat gain profiles based on datetime, building usage and floor area.
    # Profiles: Profil_HIL, ResidentialDetached
    int_gains_df = get_int_gains(time = weather_df.index,
-                                   profile_path = Path(repo_filepath, 'data', 'profiles', 'InternalGains', 'ResidentialDetached.csv'),
+                                   profile_path = Path(repo_filepath, 'i4b_data', 'profiles', 'InternalGains', 'ResidentialDetached.csv'),
                                    bldg_area = building_model.params['area_floor'] )
 
    # 3. Generate profiles of solar heat gains, based on datetime and irradiance data in the weather df,
@@ -105,7 +105,7 @@ def generate_disturbances_all(building_model, year=2015, timestep=900, offset_da
    data_grid,data_grid_ = np.ones(Qdot_sol.shape[0]),np.ones(Qdot_sol.shape[0])
    # read grid data
    if GRID_ON: 
-      data_grid = pd.read_csv(Path(repo_filepath, 'data', 'grid', 'grid_signals.csv'),sep=',',header='infer')['EEX2015'].values*0.001*100 # Cent/kWh
+      data_grid = pd.read_csv(Path(repo_filepath, 'i4b_data', 'grid', 'grid_signals.csv'),sep=',',header='infer')['EEX2015'].values*0.001*100 # Cent/kWh
       data_grid_ = data_grid.copy()
       data_grid_[:data_grid[::2].shape[0]] = data_grid[::2]
       data_grid_[data_grid[::2].shape[0]:] = data_grid[1::2]
@@ -147,7 +147,7 @@ def generate_disturbances(building, year=2015, repo_filepath='', allow_download:
                               allow_download=allow_download) # Load, and then select the first week of the data
 
     # Generate absolute heat gain profiles based on datetime, building usage and floor area.
-    profile_path = Path(repo_filepath, 'data', 'profiles', 'InternalGains', f'{building.usage}.csv')
+    profile_path = Path(repo_filepath, 'i4b_data', 'profiles', 'InternalGains', f'{building.usage}.csv')
     int_gains_df = get_int_gains(time = weather_df.index, 
                                  profile_path = str(profile_path),
                                  bldg_area = building.params['area_floor'] )
@@ -171,7 +171,7 @@ def load_weather(latitude, longitude, altitude=0, year=2015, tz='Europe/Berlin',
     
     If a DWD weather file exists for the given location, this file is used. Otherwise, PVGIS online data is used.
     
-    An example DWD weather file for a location close to Freiburg can be found in the data/weather/ directory.
+    An example DWD weather file for a location close to Freiburg can be found in the i4b_data/weather/ directory.
     Custom DWD weather files can be downloaded at: https://kunden.dwd.de/obt/.
 
     Parameters
@@ -218,7 +218,7 @@ def load_weather(latitude, longitude, altitude=0, year=2015, tz='Europe/Berlin',
     lat_str = f'{latitude:07.4f}'.replace('.', '')
     lon_str = f'{longitude:07.4f}'.replace('.', '')
     dwd_filename = f'TRY2015_{lat_str}{lon_str}_Jahr.dat'
-    dwd_filepath = Path(repo_filepath, 'data', 'weather', dwd_filename)
+    dwd_filepath = Path(repo_filepath, 'i4b_data', 'weather', dwd_filename)
 
     # If a dwd file for the given location exists, process it
     if dwd_filepath.exists():
@@ -415,7 +415,7 @@ def _fetch_pvgis_data(latitude, longitude, two_axis_tracking=False,
     if (start_year is not None) and (end_year is not None):
         pvgis_filename += f'_{start_year}_{end_year}'
     pvgis_filename += '.json'
-    pvgis_filepath = Path(repo_filepath, 'data', 'weather', pvgis_filename)
+    pvgis_filepath = Path(repo_filepath, 'i4b_data', 'weather', pvgis_filename)
     if pvgis_filepath.exists():
         print('Found PVGIS data file ' + pvgis_filepath.as_posix())
         with pvgis_filepath.open('r') as file:
@@ -454,7 +454,7 @@ def _fetch_pvgis_data(latitude, longitude, two_axis_tracking=False,
 
 
 def _load_city_registry(repo_filepath: str):
-    registry_path = Path(repo_filepath, 'data', 'cities.yaml')
+    registry_path = Path(repo_filepath, 'i4b_data', 'cities.yaml')
     if not registry_path.exists():
         return {}
     with registry_path.open('r') as f:
@@ -502,7 +502,7 @@ def load_weather_for_city(city_name: str, year: int = 2015, repo_filepath: str =
 
 def register_city(name: str, lat: float, lon: float, altitude: float, tz: str,
                   weather_file: Optional[str] = None, repo_filepath: str = ''):
-    registry_path = Path(repo_filepath, 'data', 'cities.yaml')
+    registry_path = Path(repo_filepath, 'i4b_data', 'cities.yaml')
     cities = _load_city_registry(repo_filepath)
     cities[name] = {
         'lat': float(lat),
@@ -543,7 +543,7 @@ def get_random_location(country_code='DE', repo_filepath=''):
     '''
 
     overpass_filename = f'overpass_{country_code}_cities.json'
-    overpass_filepath = Path(repo_filepath, 'data', 'buildings', overpass_filename)
+    overpass_filepath = Path(repo_filepath, 'i4b_data', 'buildings', overpass_filename)
     if overpass_filepath.exists():
         # Load saved data file
         print('Found Overpass data file ' + overpass_filepath.as_posix())
@@ -594,7 +594,7 @@ def get_solar_gains(weather, bldg_params, albedo = 0.2):
         - windows  (list of dicts) : geometry and material properties of the windows
         - position (dict)          : latitude, longitude and elevation and timezone of the building
 
-        The structure for three example buildings is shown in data/buildings/.
+        The structure for three example buildings is shown in i4b_data/buildings/.
     
     albedo: float - optional
         Measure of diffuse reflection of solar radiation, grass = 0.2, asphalt = 0.04, snow = 0.8
@@ -674,7 +674,7 @@ def get_int_gains(time, profile_path, bldg_area = None):
         
     profile_path: string
         Path to csv-file with internal gains profile 
-        e. g.:  data/profiles/InternalGains/ResidentialDetached.csv
+        e. g.:  i4b_data/profiles/InternalGains/ResidentialDetached.csv
                                             
     bldg_area: float - optional
         Heated living space [m^2]

@@ -40,7 +40,7 @@ def main():
         hp_model="Heatpump_AW",
         method="4R3C",
         mdot_HP=0.25,
-        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=2,
         backend="jax",

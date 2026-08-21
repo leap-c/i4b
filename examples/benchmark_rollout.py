@@ -36,7 +36,7 @@ def _make_env(n_envs: int, device: str):
         hp_model="Heatpump_AW",
         method="4R3C",
         mdot_HP=0.25,
-        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=900,
         days=30,           # long episode so we don't truncate during rollout
         device=device,

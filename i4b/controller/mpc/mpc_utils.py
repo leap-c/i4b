@@ -200,7 +200,7 @@ def read_Tamb(name,Plant_model,col='Dry_bulb',folder='..\inputdata'):
    return data
 
 
-def read_data(name,col='Grid',scale=1.,res_old=0.25,res_new=0.25,days=50,SCALE=False,NORM=False,folder='data'):
+def read_data(name,col='Grid',scale=1.,res_old=0.25,res_new=0.25,days=50,SCALE=False,NORM=False,folder='i4b_data'):
    prevwd = os.getcwd(); os.chdir(folder)
    df_data = pd.read_csv('%s.csv'%name, sep=',',header='infer')
    os.chdir(prevwd)

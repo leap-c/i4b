@@ -15,8 +15,6 @@ dependencies = [
     "matplotlib>=3.10",
     "pvlib>=0.13",
     "PyYAML>=6.0",
-    "jax>=0.6",
-    "jaxlib>=0.6",
     "diffrax>=0.7",
 ]
 
@@ -28,6 +26,12 @@ rl = [
     "torch>=2.9",
     "tensorboard>=2.20",
     "stable-baselines3>=2.7",
+]
+cpu = [
+    "jax[cpu]>=0.6",
+]
+cuda = [
+    "jax[cuda13]>=0.6",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -86,7 +86,7 @@ Building Envelope (raw parameters)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are the primary physical parameters defined in each building file
-(``data/buildings/*.py``):
+(``i4b_data/buildings/*.py``):
 
 .. list-table::
    :header-rows: 1
@@ -236,7 +236,7 @@ Python API
        hp_model="Heatpump_AW",
        method="4R3C",
        mdot_HP=0.25,
-       internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+       internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
        device="gpu",
        randomization_events=events,
        randomization_seed=42,

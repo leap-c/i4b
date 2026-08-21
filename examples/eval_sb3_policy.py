@@ -80,7 +80,7 @@ def main():
     )
     parser.add_argument(
         '--internal_gain_profile', type=str,
-        default='i4b_data/profiles/InternalGains/ResidentialDetached.csv',
+        default='i4b_i4b_data/profiles/InternalGains/ResidentialDetached.csv',
         help='Internal gains profile path'
     )
     parser.add_argument(

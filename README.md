@@ -84,7 +84,7 @@ env = make_room_heat_env(
     hp_model="Heatpump_AW",
     method="4R3C",
     mdot_HP=0.25,
-    internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+    internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
     delta_t=900,       # 15-minute timestep
     days=30,           # 30-day episodes
 )
@@ -124,7 +124,7 @@ env = RoomHeatVecEnv(
     hp_model="Heatpump_AW",
     method="4R3C",
     mdot_HP=0.25,
-    internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+    internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
     delta_t=900,
     days=30,
     device="gpu",
@@ -156,7 +156,7 @@ obs_torch = jax_to_torch(obs_seq)   # torch.Tensor on cuda:0
 
 ## Building Models
 
-Building parameters are stored in `/data/buildings/` as Python dicts. The framework includes single-family homes from the German TABULA dataset across construction periods 1919–present, in three refurbishment states (`_0_soc` state-of-construction, `_1_enev` EnEV-standard, `_2_kfw` KfW-standard).
+Building parameters are stored in `/i4b_data/buildings/` as Python dicts. The framework includes single-family homes from the German TABULA dataset across construction periods 1919–present, in three refurbishment states (`_0_soc` state-of-construction, `_1_enev` EnEV-standard, `_2_kfw` KfW-standard).
 
 RC model variants and their state vectors:
 
@@ -197,7 +197,7 @@ env = RoomHeatVecEnv(
     hp_model="Heatpump_AW",
     method="4R3C",
     mdot_HP=0.25,
-    internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+    internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
     delta_t=900,        # 15-minute timestep
     days=30,
     device="gpu",       # "cpu" or "gpu"
@@ -357,7 +357,7 @@ env = make_room_heat_env(
     hp_model="Heatpump_AW",
     method="4R3C",
     mdot_HP=0.25,
-    internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+    internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
     delta_t=900,
     days=30,
 )
@@ -388,7 +388,7 @@ env:
   hp_model: Heatpump_AW
   method: 4R3C
   mdot_HP: 0.25
-  internal_gain_profile: data/profiles/InternalGains/ResidentialDetached.csv
+  internal_gain_profile: i4b_data/profiles/InternalGains/ResidentialDetached.csv
   delta_t: 900
   days: 30
   device: gpu
@@ -450,7 +450,7 @@ jax_env = RoomHeatVecEnv(
     hp_model="Heatpump_AW",
     method="4R3C",
     mdot_HP=0.25,
-    internal_gain_profile="data/profiles/InternalGains/ResidentialDetached.csv",
+    internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
     delta_t=900,
     days=30,
     device="gpu",

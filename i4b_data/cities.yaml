@@ -4,7 +4,7 @@ cities:
     lon: 7.7184
     altitude: 207
     tz: Europe/Berlin
-    weather_file: data/weather/TRY2015_480252077184_Jahr.dat
+    weather_file: i4b_data/weather/TRY2015_480252077184_Jahr.dat
   Berlin:
     lat: 52.5200
     lon: 13.4050

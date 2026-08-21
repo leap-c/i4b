@@ -329,7 +329,7 @@ def main() -> None:
     # Internal gains
     int_gains_df = disturbances.get_int_gains(
         time=weather_df.index,
-        profile_path='i4b_data/profiles/InternalGains/ResidentialDetached.csv',
+        profile_path='i4b_i4b_data/profiles/InternalGains/ResidentialDetached.csv',
         bldg_area=building_params['area_floor']
     )
 

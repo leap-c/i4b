@@ -68,7 +68,7 @@ def main():
         hp_model="Heatpump_AW",
         method=args.method,
         mdot_HP=0.25,
-        internal_gain_profile="i4b_data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile="i4b_i4b_data/profiles/InternalGains/ResidentialDetached.csv",
         delta_t=args.delta_t,
         days=args.days,
         device="gpu",

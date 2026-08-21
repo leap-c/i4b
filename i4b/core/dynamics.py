@@ -18,7 +18,7 @@ Model variants and their state layouts:
   7R5C : x = [T_room, T_surf_wall, T_op*, T_mass, T_surf_floor, T_hp_ret]
 
 The linear models (all of the above) support exact zero-order-hold discretization
-via ``src.core.integrators.linear_discretize_batch``.
+via ``i4b.core.integrators.linear_discretize_batch``.
 """
 from __future__ import annotations
 from typing import Dict
