@@ -146,7 +146,7 @@ def tune_building_t_offset_and_mdot_hp(building, method='4R3C', t_offset_min=-15
     import i4b.models.model_hvac as model_hvac
     import i4b.simulator as simulator
 
-    INT_GAIN_PROFILE = f'{repo_filepath}data/profiles/InternalGains/ResidentialDetached.csv'
+    INT_GAIN_PROFILE = f'{repo_filepath}i4b_data/profiles/InternalGains/ResidentialDetached.csv'
     INITIAL_TEMP = 20 # °C
     SIMULATION_STEP = 3600 # 1h
 

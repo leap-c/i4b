@@ -7,8 +7,8 @@ A simulator class provides a high level interface to perform one and multistep s
 and indicators for comfort levels and the energy demand. This interface can be used to evaluate and test different control strategies. 
 Simple heat pump models, based on performance curves can be used as heating systems.
 Disturbance profiles for the ambient temperature, internal heat gains by occupancy, and appliances as well as solar heat gains can be generated as pandas.Timeseries.
-The parameters for buildings of different refurbishment states are provided in the /data/buildings directory. 
-The disturbances profiles for different building types can be found in the /data/profiles directory.
+The parameters for buildings of different refurbishment states are provided in the /i4b_data/buildings directory. 
+The disturbances profiles for different building types can be found in the /i4b_data/profiles directory.
 A simple rule based heating curve controller can be used as the reference case at the lower end. A MPC controller provides a reference case at the upper end.
 
 

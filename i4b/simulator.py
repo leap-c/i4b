@@ -304,7 +304,7 @@ def main():
     from i4b_data.buildings.sfh_1919_1948 import sfh_1919_1948_0_soc as building
     
     # Initialize the building model
-    bldg_model = model_buildings.Building(params    = building, # More example buildings can be found in data/buildings/.
+    bldg_model = model_buildings.Building(params    = building, # More example buildings can be found in i4b_data/buildings/.
                                           mdot_hp   = 0.25,          # Massflow of the heat supply system. [kg/s]
                                           method    = '7R5C',        # For available calculation methods see: model_buildings.py.
                                           verbose   = False)

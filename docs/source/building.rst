@@ -1,6 +1,6 @@
 Building Model
 --------------
-Geometrical and physical parameters which specify different buildings are available in the data/buildings directory, e. g.
+Geometrical and physical parameters which specify different buildings are available in the i4b_data/buildings directory, e. g.
    - i4c_building : an energy efficient KFW 40+ house. Source: EnEV-Nachweis
    - sfh_58_68_geg : a single family home constructed in the building age class 1958-68, with an envelope refurbished according to the GEG regulations. Source: Tabula
    - sfh_84_94_soc : a single family home constructed in the building age class 1984-94, with an envelope in the state of construction. Source: Tabula

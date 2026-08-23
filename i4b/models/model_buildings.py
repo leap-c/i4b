@@ -13,7 +13,7 @@ from i4b.constants import (
 )
 
 class Building:
-    """ With the building class, a bulding model can be generated from pysical and geometrical parameters as specified in the data/buildings directory.
+    """ With the building class, a bulding model can be generated from pysical and geometrical parameters as specified in the i4b_data/buildings directory.
     Different calculation methods are available to model the heat flows of the building and an underfloor heating system in a dynamic way (2R2C, 4R3C, 5R4C).
     Ordinary differential equations (ODEs) are used to model the respective thermal networks, containing different thermal resistances (R) and capacities (C).
     The ODEs are transformed into state space equations in the form :math:`\dot{x} = A \cdot x + B \cdot u` and :math:`y = C \cdot x + D \cdot u` with:
@@ -936,7 +936,7 @@ if __name__ == "__main__":
 
     # Initialize the building model
     building = sfh_58_68_geg
-    bldg_model = Building(params    = building, # More example buildings can be found in data/buildings/.
+    bldg_model = Building(params    = building, # More example buildings can be found in i4b_data/buildings/.
                           mdot_hp   = 0.25,          # Massflow of the heat supply system. [kg/s]
                           method    = '5R4C',        # For available calculation methods see: model_buildings.py.
                           verbose   = True)
