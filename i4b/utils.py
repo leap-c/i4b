@@ -122,7 +122,7 @@ def plot(fig, ax, plt, tf, savename=None, folder="figures"):
     
     
 def get_all_buildings_as_dict():
-    ''' Get a dictionary of all TABULA buildings in the data/buildings directory '''
+    ''' Get a dictionary of all TABULA buildings in the i4b_data/buildings directory '''
 
     path = 'i4b_data/buildings/'
     construction_states = ['0_soc', '1_enev', '2_kfw']

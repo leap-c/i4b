@@ -48,7 +48,7 @@ For Jupyter notebooks (located in `/notebooks`), install the optional notebook d
 
 ## Building Models
 
-Geometrical and physical parameters that specify different buildings are available in the `/data/buildings` directory, including:
+Geometrical and physical parameters that specify different buildings are available in the `/i4b_data/buildings` directory, including:
 
 - `i4c_building`: an energy-efficient KFW 40+ house. Source: EnEV-Nachweis.
 - `sfh_58_68_geg`: a single-family home constructed between 1958-68, with an envelope refurbished according to GEG regulations. Source: Tabula.
@@ -144,7 +144,7 @@ env = make_room_heat_env(
     hp_model='Heatpump_AW',
     method='4R3C',
     mdot_HP=0.25,
-    internal_gain_profile='data/profiles/InternalGains/ResidentialDetached.csv',
+    internal_gain_profile='i4b_data/profiles/InternalGains/ResidentialDetached.csv',
     weather_forecast_steps=[],  # e.g., [1,2,3] to append future T_amb steps
     delta_t=900,  # timestep in seconds (900 = 15 minutes, 3600 = 1 hour)
     days=30,
@@ -172,7 +172,7 @@ python -m examples.train_sb3_ppo \
   --hp_model Heatpump_AW \
   --method 4R3C \
   --mdot_hp 0.25 \
-  --internal_gain_profile data/profiles/InternalGains/ResidentialDetached.csv \
+  --internal_gain_profile i4b_data/profiles/InternalGains/ResidentialDetached.csv \
   --delta_t 900 \
   --days 30 \
   --total_timesteps 200000 \
@@ -279,7 +279,7 @@ python -m examples.eval_sb3_policy \
   --hp_model Heatpump_AW \
   --method 4R3C \
   --mdot_hp 0.25 \
-  --internal_gain_profile data/profiles/InternalGains/ResidentialDetached.csv \
+  --internal_gain_profile i4b_data/profiles/InternalGains/ResidentialDetached.csv \
   --delta_t 900 \
   --days 30 \
   --model_path runs/ppo_roomheat/ppo_roomheat.zip \
