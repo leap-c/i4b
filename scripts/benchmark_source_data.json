@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "periods": [
+    {"id": "period_a", "start": "2024-04-01", "end": "2025-03-31"},
+    {"id": "period_b", "start": "2025-04-01", "end": "2026-03-31"}
+  ],
+  "weather_model": "ecmwf_ifs",
+  "forecast_run_hours_utc": [0, 12],
+  "forecast_horizon_hours": 48,
+  "locations": [
+    {
+      "id": "de_freiburg", "country": "DE", "latitude": 48.0252,
+      "longitude": 7.7184, "timezone": "Europe/Berlin", "market": "DE-LU"
+    },
+    {
+      "id": "fr_paris", "country": "FR", "latitude": 48.8566,
+      "longitude": 2.3522, "timezone": "Europe/Paris", "market": "FR"
+    },
+    {
+      "id": "pl_warsaw", "country": "PL", "latitude": 52.2297,
+      "longitude": 21.0122, "timezone": "Europe/Warsaw", "market": "PL"
+    },
+    {
+      "id": "no_oslo", "country": "NO", "latitude": 59.9139,
+      "longitude": 10.7522, "timezone": "Europe/Oslo", "market": "NO1"
+    },
+    {
+      "id": "cy_nicosia", "country": "CY", "latitude": 35.1856,
+      "longitude": 33.3823, "timezone": "Asia/Nicosia", "market": null
+    },
+    {
+      "id": "ie_dublin", "country": "IE", "latitude": 53.3498,
+      "longitude": -6.2603, "timezone": "Europe/Dublin", "market": "IE(SEM)"
+    },
+    {
+      "id": "bg_sofia", "country": "BG", "latitude": 42.6977,
+      "longitude": 23.3219, "timezone": "Europe/Sofia", "market": "BG"
+    }
+  ]
+}

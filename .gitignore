@@ -63,4 +63,10 @@ pytest_cache/
 *.local
 *.secret
 
+# Benchmark source-data acquisition output (scripts/prepare_benchmark_data.py)
+/source-data/
+
+# marimo session caches
+__marimo__/
+
 
