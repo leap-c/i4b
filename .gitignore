@@ -65,8 +65,8 @@ pytest_cache/
 
 # Benchmark source-data acquisition output (scripts/prepare_benchmark_data.py)
 /source-data/
+/i4b-benchmark*/
+/production*/
 
 # marimo session caches
 __marimo__/
-
-

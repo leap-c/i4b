@@ -37,7 +37,7 @@ class RoomHeatEnv(gym.Env):
     """
     def __init__(self,
         hp_model: str,
-        building: str,
+        building: Optional[str],
         method: str,
         mdot_HP: float,
         internal_gain_profile: str,
@@ -52,9 +52,9 @@ class RoomHeatEnv(gym.Env):
         termination_fn: Optional[Callable] = None,
         randomization_events: Optional[List[EventSpec]] = None,
         randomization_seed: Optional[int] = None,
-        allow_weather_download: bool = False,
-        city: Optional[str] = None,
-        batch_mode: str = "vmap",
+         allow_weather_download: bool = False,
+         city: Optional[str] = None,
+         batch_mode: str = "vmap",
         saveat_mode: str = "ts",
         norm_mode: str = "rms",
         fast_cost: bool = False,
@@ -68,6 +68,8 @@ class RoomHeatEnv(gym.Env):
         temp_deviation_weight: float = 0.0,
         # Observation noise
         noise_level: float = 0.0,
+        building_params: Optional[Dict] = None,
+        disturbances: Optional[pd.DataFrame] = None,
     ):
         """Initialize the RoomHeatEnv.
 
@@ -136,6 +138,7 @@ class RoomHeatEnv(gym.Env):
         self.step_mode = step_mode
         self.integrator = integrator
         self.internal_gain_profile = internal_gain_profile
+        self._disturbances = disturbances
         self._resolve_runtime_options()
         
         # Goal-based learning
@@ -147,10 +150,12 @@ class RoomHeatEnv(gym.Env):
         self.temp_deviation_weight = temp_deviation_weight
         
         # Initialize building model
-        if building not in BUILDING_NAMES2CLASS.keys():
-            raise ValueError(f"Building {building} not in the list of available buildings")
-        
-        self.building = BUILDING_NAMES2CLASS[building]
+        if building_params is None:
+            if building not in BUILDING_NAMES2CLASS.keys():
+                raise ValueError(f"Building {building} not in the list of available buildings")
+            self.building = BUILDING_NAMES2CLASS[building]
+        else:
+            self.building = dict(building_params)
         self.env_params = dict(self.building)
         self.env_params['mdot_hp'] = mdot_HP
         if self.event_manager:
@@ -259,6 +264,25 @@ class RoomHeatEnv(gym.Env):
 
     def _load_disturbances(self, internal_gain_profile: str):
         """Load weather data and calculate total disturbances."""
+        if self._disturbances is not None:
+            required = ["T_amb", "Qdot_gains"]
+            if set(self._disturbances.columns) != set(required):
+                raise ValueError(f"disturbances must have exactly these columns: {required}")
+            if not isinstance(self._disturbances.index, pd.DatetimeIndex):
+                raise ValueError("disturbance index must be a DatetimeIndex")
+            if str(self._disturbances.index.tz) != "UTC":
+                raise ValueError("disturbance index must use UTC")
+            if self._disturbances.index.has_duplicates or not self._disturbances.index.is_monotonic_increasing:
+                raise ValueError("disturbance timestamps must be unique and increasing")
+            intervals = self._disturbances.index.to_series().diff().dropna()
+            if not intervals.eq(pd.Timedelta(seconds=self.delta_t)).all():
+                raise ValueError(f"disturbances must use a {self.delta_t}-second interval")
+            self.p = self._disturbances[required].astype(np.float32).copy()
+            if self.days is not None:
+                max_steps = int(self.days * 24 * (3600 / self.delta_t))
+                self.p = self.p.iloc[:max_steps]
+            return
+
         from pathlib import Path
         repo_root = Path(__file__).resolve().parents[2]
         
