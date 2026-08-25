@@ -6,10 +6,11 @@ Transform the acquired TABULA and reference-weather artifacts into:
 
 - A simulation-ready catalog of 191 I4B `4R3C` buildings.
 - Reproducible closed-loop trajectories from several MPC-based collection policies.
-- Short, safe open-loop APRBS trajectories.
+- Full-period open-loop APRBS trajectories.
 - One canonical, controller-independent transition dataset.
 - A minimal environment and rollout interface reusable for later controller evaluation.
-- A primary split plus alternative ablation split manifests.
+- A primary split that separates building families and time.
+- One time-only ablation split.
 
 Do not create Chronos-specific files in this ticket.
 
@@ -196,7 +197,8 @@ For every building and period:
 - Compute deterministic residential internal gains.
 - Compute solar gains from irradiance and mapped windows.
 - Set `Qdot_gains = internal + solar`.
-- Produce exactly 35,040 transitions per complete 365-day period.
+- Produce 35,039 transition rows per complete 365-day period: 35,040 state samples
+  with the final state omitted because it has no following applied input.
 - Use identical disturbances and initial states for matched controller variants.
 
 Initialize all `4R3C` states to `20 degC`. Do not add noise or random initialization.
@@ -205,6 +207,8 @@ Initialize all `4R3C` states to `20 degC`. Do not add noise or random initializa
 
 All full-period MPC variants re-solve MPC every 15 minutes from the actual current
 state. Residuals modify only the first action before standard HP projection.
+Use the pilot-validated 12-step (3-hour) MPC horizon; record it in
+`controllers.json` and the controller configuration hash.
 
 ```text
 mpc-nominal
@@ -238,48 +242,27 @@ Residual APRBS:
 
 Always store the applied action after projection.
 
-## Safe Open-Loop APRBS
+## Open-Loop APRBS
 
 Add:
 
 ```text
-open-loop-aprbs-safe
+open-loop-aprbs
 ```
 
-Generate two 28-day episodes per year and location:
+Generate one full-period trajectory per building and weather period. Replay the matched
+nominal trajectory's applied action as a predetermined baseline and add APRBS excitation
+without re-solving MPC from the current APRBS trajectory state. This preserves broad
+country- and season-specific coverage without imposing one calendar definition of
+redundant heating data.
 
-- One cold-season episode.
-- One shoulder-season episode.
-- Select non-overlapping windows deterministically from reference weather.
-- Use the same windows across buildings assigned to the same location.
+Use a fixed 1.5 K residual amplitude for every building. Sample deterministic symmetric
+residual levels around the prerecorded nominal baseline and hold them for 1-6 hours.
 
-Derive each building's action range from its matched nominal MPC trajectory:
-
-```text
-lower = fifth percentile of applied nominal controls
-upper = ninety-fifth percentile of applied nominal controls
-```
-
-Sample deterministic absolute supply-temperature levels in this range and hold them
-for 1-6 hours.
-
-Use a fixed state envelope independent of changing comfort schedules:
-
-```text
-18 degC <= T_room <= 28 degC
-```
-
-Safety intervention:
-
-```text
-T_room >= 27.5 degC -> no heating until T_room < 27 degC
-T_room <= 18.5 degC -> upper APRBS level until T_room > 19 degC
-```
-
-Require safety intervention on less than 5% of transitions. If exceeded, shrink the
-action range toward its midpoint and regenerate the episode.
-
-This policy is safety-filtered and must not be described as perfectly open loop.
+Use the same normalized amplitude rule for every building. Do not tune the amplitude
+or apply state-feedback intervention per trajectory. Standard heat-pump action
+projection remains active. Record each trajectory's observed room-temperature range so
+unusual regimes can be analyzed or selected later without changing collection policy.
 
 ## Dataset Layout
 
@@ -292,24 +275,7 @@ i4b-benchmark/
   split.parquet
 
   ablation-splits/
-    nominal-only.parquet
-    nominal-offsets.parquet
-    nominal-residual-aprbs.parquet
-    nominal-open-loop-aprbs.parquet
-    all-collection-policies.parquet
-    temporal-a-to-b.parquet
-    family-fold-0.parquet
-    family-fold-1.parquet
-    family-fold-2.parquet
-    family-fold-3.parquet
-    family-fold-4.parquet
-    country-BG-holdout.parquet
-    country-CY-holdout.parquet
-    country-DE-holdout.parquet
-    country-FR-holdout.parquet
-    country-IE-holdout.parquet
-    country-NO-holdout.parquet
-    country-PL-holdout.parquet
+    time.parquet
 
   transitions/
     part-000.parquet
@@ -324,30 +290,27 @@ Generated data must not be committed.
 
 ## Transition Schema
 
-One row represents:
+One row represents the state at `timestamp_utc` and the input applied over the
+following 15-minute interval. The next row in the same trajectory contains the
+resulting state, so do not duplicate `*_next` columns.
 
 ```text
-state_t + applied input_t + disturbance_t -> state_next
+state_t + applied input_t + disturbance_t -> state_(t+1)
 ```
 
 Use exactly:
 
 ```text
 trajectory_id       string
-timestamp_t         timestamp[UTC]
-timestamp_next      timestamp[UTC]
+timestamp_utc       timestamp[UTC]
 
-T_room_t            float32
-T_wall_t            float32
-T_hp_ret_t          float32
+T_room              float32
+T_wall              float32
+T_hp_ret            float32
 
 T_hp_sup_applied    float32
-T_amb_t             float32
-Qdot_gains_t        float32
-
-T_room_next         float32
-T_wall_next         float32
-T_hp_ret_next       float32
+T_amb               float32
+Qdot_gains          float32
 ```
 
 Do not add controller diagnostics, forecasts, prices, matrices, building metadata, or
@@ -381,11 +344,14 @@ revision, horizon, objective, residual rule, action bounds, and configuration ha
 ```text
 trajectory_id
 split
+start_time_utc
+end_time_utc
 ```
 
-Use a deterministic country-stratified building-family assignment:
+The primary benchmark separates both building families and time. Assign complete
+families deterministically and stratify the assignment by country:
 
-| Country | Train | Validation | Test |
+| Country | Train families | Validation families | Test families |
 |---|---:|---:|---:|
 | BG | 5 | 1 | 1 |
 | CY | 2 | 1 | 1 |
@@ -396,14 +362,49 @@ Use a deterministic country-stratified building-family assignment:
 | PL | 5 | 1 | 1 |
 | Total | 44 | 10 | 10 |
 
-Rank family IDs using a stable SHA-256 rule, not process-dependent hashing.
+Rank family IDs using a stable SHA-256 rule, not process-dependent hashing. All
+variants of one family inherit the same family assignment.
 
-All variants, periods, episodes, and controllers belonging to one family inherit the
-same split.
+Use this two-dimensional assignment with half-open time intervals:
 
-Ablation manifests may test family folds, future-time generalization, country holdout,
-controller distribution, and different trajectory mixtures. They must never split
-rows from one trajectory.
+```text
+train:      train families      x [2024-04-01, 2025-01-01)
+validation: validation families x [2025-01-01, 2025-04-01)
+test:       test families       x [2025-04-01, 2026-04-01)
+```
+
+No building family and no timestamp may occur in more than one primary split.
+
+This intentionally leaves some generated trajectories out of the primary split:
+
+- Train-family period B trajectories.
+- Validation-family period B trajectories.
+- Test-family period A trajectories.
+
+They remain in the canonical corpus and can be selected by later manifests.
+
+`split.parquet` contains one row per selected trajectory:
+
+```text
+trajectory_id
+split
+start_time_utc
+end_time_utc
+```
+
+## First Ablation
+
+`ablation-splits/time.parquet` removes the family holdout and tests time
+generalization only:
+
+```text
+all families x [2024-04-01, 2025-01-01) -> train
+all families x [2025-01-01, 2025-04-01) -> validation
+all families x [2025-04-01, 2026-04-01) -> test
+```
+
+It includes every building and controller trajectory from the corresponding period.
+Do not add further ablation manifests until this dataset has been validated.
 
 ## Writing And Compaction
 
@@ -414,15 +415,38 @@ Long generation must be resumable:
 3. Compact validated trajectories into deterministic Parquet shards.
 4. Target approximately 128-256 MB per final shard.
 5. Verify compaction preserves every transition exactly once.
-6. Write the final manifest and checksums only after successful compaction.
+6. Write the final manifest only after successful compaction.
+
+### Parallel Execution
+
+Use the scalar environment as the authoritative collection path. Do not extend
+`RoomHeatVecEnv` for this dataset: its GPU rollout path is optimized for precomputed
+open-loop actions, while benchmark controllers re-solve MPC from the current state.
+
+Parallelize independent collection jobs with a persistent process pool:
+
+- One job is one `(building_id, period_id)` pair and generates all matched controller
+  variants so they share disturbances, initial state, and APRBS waveform.
+- Initialize the MPC solver once per worker and reuse it across jobs.
+- Use process spawning rather than forking an initialized JAX or acados runtime.
+- Expose `--workers`; default conservatively from available CPUs and memory.
+- Set acados batch-solver threads to one when using multiple worker processes to avoid
+  CPU oversubscription.
+- Skip trajectories already present and valid in the staging cache.
+- Keep trajectory order and final shard order deterministic regardless of worker
+  completion order.
+
+Closed-loop timesteps remain sequential within a trajectory. This worker-level
+parallelism is the initial implementation; do not add vector-environment collection
+unless profiling shows plant simulation, rather than MPC, is the bottleneck.
 
 Expected scale:
 
 ```text
-6 full-period policies: 80,311,680 transitions
-safe open-loop APRBS:    2,053,632 transitions
-total:                   82,365,312 transitions
-estimated storage:       approximately 3-6 GB
+6 full-period MPC policies: 80,309,388 transitions
+full-period open-loop APRBS: 13,384,898 transitions
+total:                      93,694,286 transitions
+estimated storage:          approximately 4-7 GB
 ```
 
 ## Tests
@@ -441,9 +465,9 @@ Add offline tests for:
 - Continuous `+2 K` and `-2 K` residuals.
 - Deterministic residual APRBS.
 - Shared low/medium/high APRBS waveform.
-- Safe open-loop APRBS range and intervention behavior.
-- No family leakage in any split manifest.
-- All controller variants for one family inherit the same main split.
+- Full-period open-loop APRBS normalization and reproducibility.
+- `split.parquet` contains the deterministic family-and-time assignment above.
+- `ablation-splits/time.parquet` contains the deterministic time-only assignment.
 - Compaction preserves keys and row counts.
 - A two-building, two-day, all-controller smoke run.
 
@@ -486,10 +510,8 @@ projection derived from this canonical dataset.
 - Every mapped building produces a valid I4B `4R3C` model.
 - Dynamic buildings and disturbances can be used in `RoomHeatEnv`.
 - The same rollout path can evaluate any callable closed-loop controller.
-- Six full-period MPC policies and safe APRBS episodes are reproducible and resumable.
-- Canonical transitions use exactly the 12-column schema.
-- `split.parquet` has no family leakage.
-- Ablation manifests reference existing trajectories without data duplication.
+- Six full-period MPC policies and full-period open-loop APRBS are reproducible and resumable.
+- Canonical transitions use exactly the eight-column schema.
 - Final Parquet shards contain no duplicate transition keys.
 - No forecasts, prices, learned-controller code, or TSFM-specific preprocessing are
   introduced.

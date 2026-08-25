@@ -57,12 +57,22 @@ def test_window_orientation_missing_flag():
     with_split = dict.fromkeys(
         ["window_1_area_m2", "window_2_area_m2"], 20.0
     ) | dict.fromkeys(
-        ["window_east_area_m2", "window_south_area_m2",
-         "window_west_area_m2", "window_north_area_m2"], 5.0
+        [
+            "window_east_area_m2",
+            "window_south_area_m2",
+            "window_west_area_m2",
+            "window_north_area_m2",
+        ],
+        5.0,
     )
     without_split = with_split | dict.fromkeys(
-        ["window_east_area_m2", "window_south_area_m2",
-         "window_west_area_m2", "window_north_area_m2"], 0.0
+        [
+            "window_east_area_m2",
+            "window_south_area_m2",
+            "window_west_area_m2",
+            "window_north_area_m2",
+        ],
+        0.0,
     )
     no_windows = dict.fromkeys(without_split, 0.0)
 
@@ -79,7 +89,10 @@ def test_price_period_covers_the_whole_final_day():
 
     assert pbd.price_request("DE-LU", period)["end"] == "2025-04-01T00:00"
 
-    last, boundary = pd.Timestamp("2025-03-31T23:00Z"), pd.Timestamp("2025-04-01T00:00Z")
+    last, boundary = (
+        pd.Timestamp("2025-03-31T23:00Z"),
+        pd.Timestamp("2025-04-01T00:00Z"),
+    )
     payload = {
         "unix_seconds": [int(last.timestamp()), int(boundary.timestamp())],
         "price": [10.0, -11.0],
@@ -111,7 +124,9 @@ def test_artifact_up_to_date(tmp_path: Path):
     assert pbd.artifact_up_to_date(parquet_path, manifest_path, request)
     # An edited config must invalidate, not silently relabel someone else's data.
     assert not pbd.artifact_up_to_date(parquet_path, manifest_path, {"lat": 49.0})
-    assert not pbd.artifact_up_to_date(tmp_path / "nope.parquet", manifest_path, request)
+    assert not pbd.artifact_up_to_date(
+        tmp_path / "nope.parquet", manifest_path, request
+    )
 
     pbd.write_json(manifest_path, {"normalized_sha256": "stale", "request": request})
     assert not pbd.artifact_up_to_date(parquet_path, manifest_path, request)
@@ -125,7 +140,9 @@ def test_raw_cache_roundtrip_and_invalidation(tmp_path: Path):
     assert pbd.read_raw_cache(raw_path, request, force=False) is None  # no sidecar yet
 
     pbd.write_raw_cache(
-        raw_path, source_url="https://x.test", request=request,
+        raw_path,
+        source_url="https://x.test",
+        request=request,
         retrieved_at_utc="2024-01-01T00:00:00Z",
     )
 
@@ -177,10 +194,13 @@ def test_weather_forecasts_skip_preflight_when_fully_cached(tmp_path, monkeypatc
 
     df = pbd.normalize_weather_response(
         _weather_payload(["2024-04-01T00:00", "2024-04-01T01:00"]),
-        [location], model="ecmwf_ifs", initialization_time=run,
+        [location],
+        model="ecmwf_ifs",
+        initialization_time=run,
     )[location.id]
     checksum = pbd.write_dataframe_atomic(
-        df, tmp_path / "normalized" / "weather_forecasts" / location.id / f"{name}.parquet"
+        df,
+        tmp_path / "normalized" / "weather_forecasts" / location.id / f"{name}.parquet",
     )
     pbd.write_json(
         tmp_path / "manifests" / "weather_forecasts" / location.id / f"{name}.json",
@@ -198,3 +218,25 @@ def test_weather_forecasts_skip_preflight_when_fully_cached(tmp_path, monkeypatc
     monkeypatch.setattr(pbd, "download_forecast_run", fail)
 
     pbd.run_weather_forecasts(config, tmp_path, force=False)  # must not raise
+
+
+def test_weather_forecast_shards_are_disjoint_and_complete():
+    config = pbd.BenchmarkConfig(
+        periods=[
+            pbd.Period(id="p1", start=date(2024, 4, 1), end=date(2024, 4, 3)),
+            pbd.Period(id="p2", start=date(2025, 4, 1), end=date(2025, 4, 3)),
+        ],
+        weather_model="ecmwf_ifs",
+        forecast_run_hours_utc=[0, 12],
+        forecast_horizon_hours=2,
+        locations=[_location()],
+    )
+    runs = list(pbd.iter_configured_forecast_runs(config))
+    shards = [runs[index::3] for index in range(3)]
+
+    shard_runs = [run for shard in shards for run in shard]
+
+    assert len(runs) == 12
+    assert len(shard_runs) == len(runs)
+    assert {run for _, run in shard_runs} == {run for _, run in runs}
+    assert all(len(shard) == 4 for shard in shards)

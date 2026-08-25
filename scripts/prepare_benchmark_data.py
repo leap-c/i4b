@@ -54,6 +54,7 @@ class Location:
     longitude: float
     timezone: str
     market: str | None
+    altitude: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -90,7 +91,9 @@ def parse_config(raw: dict[str, Any]) -> BenchmarkConfig:
 
     run_hours = raw.get("forecast_run_hours_utc", [])
     if not run_hours or not all(isinstance(h, int) and 0 <= h <= 23 for h in run_hours):
-        raise ConfigError("'forecast_run_hours_utc' must be a non-empty list of hours 0-23")
+        raise ConfigError(
+            "'forecast_run_hours_utc' must be a non-empty list of hours 0-23"
+        )
 
     horizon = raw.get("forecast_horizon_hours")
     if not isinstance(horizon, int) or horizon <= 0:
@@ -132,6 +135,7 @@ def _parse_location(raw: dict[str, Any]) -> Location:
             longitude=float(raw["longitude"]),
             timezone=raw["timezone"],
             market=raw.get("market"),
+            altitude=float(raw.get("altitude", 0.0)),
         )
     except (KeyError, ValueError) as exc:
         raise ConfigError(f"Invalid location entry {raw!r}: {exc}") from exc
@@ -265,7 +269,9 @@ def _raw_sidecar_path(raw_path: Path) -> Path:
     return raw_path.with_name(raw_path.stem + ".request.json")
 
 
-def read_raw_cache(raw_path: Path, request: dict[str, Any], *, force: bool) -> str | None:
+def read_raw_cache(
+    raw_path: Path, request: dict[str, Any], *, force: bool
+) -> str | None:
     """Return the original retrieval timestamp if ``raw_path`` caches exactly
     ``request``, else ``None`` so the caller refetches.
 
@@ -292,7 +298,11 @@ def write_raw_cache(
 ) -> None:
     write_json(
         _raw_sidecar_path(raw_path),
-        {"source_url": source_url, "request": request, "retrieved_at_utc": retrieved_at_utc},
+        {
+            "source_url": source_url,
+            "request": request,
+            "retrieved_at_utc": retrieved_at_utc,
+        },
     )
 
 
@@ -323,7 +333,15 @@ def _get(url: str, params: dict[str, Any] | None = None, *, attempts: int = 5):
 
     session = requests.Session()
     for attempt in range(attempts):
-        response = session.get(url, params=params, timeout=120)
+        try:
+            response = session.get(url, params=params, timeout=120)
+        except requests.RequestException as exc:
+            if attempt == attempts - 1:
+                raise
+            delay = 5 * 2**attempt
+            print(f"[retry] {type(exc).__name__}; waiting {delay}s")
+            time.sleep(delay)
+            continue
         if response.status_code not in RETRY_STATUS or attempt == attempts - 1:
             return response
         delay = 5 * 2**attempt
@@ -356,7 +374,12 @@ TABULA_FIELDS: list[tuple[str, str, str, str]] = [
     ("building_id", "Code_BuildingVariant", "string", "string"),
     ("building_family_id", "Code_Building", "string", "string"),
     ("country_code", "Code_Country", "string", "ISO 3166-1 alpha-2"),
-    ("variant_number", "Number_BuildingVariant", "Int64", "1=existing 2=standard 3=ambitious"),
+    (
+        "variant_number",
+        "Number_BuildingVariant",
+        "Int64",
+        "1=existing 2=standard 3=ambitious",
+    ),
     ("dataset_status", "Code_StatusDataset", "string", "string"),
     ("data_type", "Code_DataType_Building", "string", "string"),
     ("building_size_class", "Code_BuildingSizeClass", "string", "string"),
@@ -427,11 +450,15 @@ def read_building_rows(workbook_path: Path) -> list[dict[str, Any]]:
     try:
         rows_iter = workbook[TABULA_SHEET].iter_rows(values_only=True)
         header = next(rows_iter)
-        header_index = {name: idx for idx, name in enumerate(header) if name is not None}
+        header_index = {
+            name: idx for idx, name in enumerate(header) if name is not None
+        }
 
         missing = set(TABULA_SOURCE_COLUMNS) - header_index.keys()
         if missing:
-            raise ValueError(f"TABULA workbook missing expected columns: {sorted(missing)}")
+            raise ValueError(
+                f"TABULA workbook missing expected columns: {sorted(missing)}"
+            )
 
         return [
             {name: row[idx] for name, idx in header_index.items()}
@@ -495,7 +522,9 @@ def normalize_building_rows(rows: list[dict[str, Any]]) -> pd.DataFrame:
 
     for name, _, dtype, _ in TABULA_FIELDS:
         df[name] = df[name].astype(dtype)
-    df["window_orientation_missing"] = df["window_orientation_missing"].astype("boolean")
+    df["window_orientation_missing"] = df["window_orientation_missing"].astype(
+        "boolean"
+    )
     return df
 
 
@@ -520,7 +549,9 @@ def validate_tabula_cohort(
         for country, group in df.groupby("country_code", observed=True)
     }
     if actual != dict(expected_cohort):
-        errors.append(f"(variants, families) per country {actual} != {dict(expected_cohort)}")
+        errors.append(
+            f"(variants, families) per country {actual} != {dict(expected_cohort)}"
+        )
 
     n_missing = int(df["window_orientation_missing"].fillna(False).astype(bool).sum())
     if n_missing != expected_orientation_missing:
@@ -568,7 +599,9 @@ def run_tabula(output_dir: Path, *, force: bool) -> None:
 
     df = normalize_building_rows(select_sfh_rows(read_building_rows(raw_path)))
     validate_tabula_cohort(df)
-    print(f"[tabula] {len(df)} variants across {df['building_family_id'].nunique()} families")
+    print(
+        f"[tabula] {len(df)} variants across {df['building_family_id'].nunique()} families"
+    )
 
     normalized_sha256 = write_dataframe_atomic(df, normalized_path)
     write_json(
@@ -611,7 +644,9 @@ OPEN_METEO_REFERENCE_MODEL = "open_meteo_archive"
 # request must fail rather than silently fall back to another model.
 ECMWF_IFS_AVAILABLE_FROM = date(2024, 3, 14)
 
-OPEN_METEO_LICENSE_NOTE = "Open-Meteo weather data, CC BY 4.0 (open-meteo.com/en/license)."
+OPEN_METEO_LICENSE_NOTE = (
+    "Open-Meteo weather data, CC BY 4.0 (open-meteo.com/en/license)."
+)
 
 # These also fix the normalized column order.
 WEATHER_REFERENCE_COLUMN_UNITS = {
@@ -660,7 +695,10 @@ def reference_request(locations: list[Location], period: Period) -> dict[str, An
 
 
 def forecast_request(
-    locations: list[Location], model: str, initialization_time: datetime, horizon_hours: int
+    locations: list[Location],
+    model: str,
+    initialization_time: datetime,
+    horizon_hours: int,
 ) -> dict[str, Any]:
     return {
         "locations": [_location_entry(loc) for loc in locations],
@@ -702,7 +740,10 @@ def download_reference_weather(
 
 
 def download_forecast_run(
-    locations: list[Location], model: str, initialization_time: datetime, horizon_hours: int
+    locations: list[Location],
+    model: str,
+    initialization_time: datetime,
+    horizon_hours: int,
 ) -> list[dict[str, Any]]:
     """Download one batched archived forecast run for all ``locations``."""
     if model == "ecmwf_ifs" and initialization_time.date() < ECMWF_IFS_AVAILABLE_FROM:
@@ -719,6 +760,8 @@ def download_forecast_run(
     }
     response = _get(OPEN_METEO_SINGLE_RUNS_URL, params)
     if response.status_code == 400:
+        if "requested model run is not available" in response.text:
+            raise LookupError(response.text)
         raise ValueError(f"Open-Meteo rejected forecast run request: {response.text}")
     response.raise_for_status()
     return _as_location_list(response.json())
@@ -764,27 +807,34 @@ def normalize_weather_response(
                 init_ts = init_ts.tz_localize("UTC")
             data["model"] = model
             data["initialization_time_utc"] = init_ts
-            data["lead_hours"] = ((valid_time - init_ts).total_seconds() / 3600.0).astype(
-                "float64"
-            )
+            data["lead_hours"] = (
+                (valid_time - init_ts).total_seconds() / 3600.0
+            ).astype("float64")
             columns = list(WEATHER_FORECAST_COLUMN_UNITS)
 
         df = pd.DataFrame(data)[columns]
         times = df["valid_time_utc"]
         if times.duplicated().any() or not times.is_monotonic_increasing:
-            raise ValueError(f"Non-increasing or duplicate valid_time_utc for {location.id}")
+            raise ValueError(
+                f"Non-increasing or duplicate valid_time_utc for {location.id}"
+            )
         frames[location.id] = df
 
     return frames
 
 
-def iter_configured_forecast_runs(config: BenchmarkConfig) -> Iterator[tuple[Period, datetime]]:
+def iter_configured_forecast_runs(
+    config: BenchmarkConfig,
+) -> Iterator[tuple[Period, datetime]]:
     """Deterministically enumerate (period, initialization_time_utc) runs."""
     for period in config.periods:
         day = period.start
         while day <= period.end:
             for hour in config.forecast_run_hours_utc:
-                yield period, datetime(day.year, day.month, day.day, hour, tzinfo=timezone.utc)
+                yield (
+                    period,
+                    datetime(day.year, day.month, day.day, hour, tzinfo=timezone.utc),
+                )
             day += timedelta(days=1)
 
 
@@ -807,11 +857,16 @@ def check_forecast_availability(config: BenchmarkConfig) -> None:
             config.locations, config.weather_model, run, horizon_hours=1
         )
         normalize_weather_response(
-            payload, config.locations, model=config.weather_model, initialization_time=run
+            payload,
+            config.locations,
+            model=config.weather_model,
+            initialization_time=run,
         )
 
 
-def run_weather_reference(config: BenchmarkConfig, output_dir: Path, *, force: bool) -> None:
+def run_weather_reference(
+    config: BenchmarkConfig, output_dir: Path, *, force: bool
+) -> None:
     for period in config.periods:
         request = reference_request(config.locations, period)
         raw_path = output_dir / "raw" / "open_meteo" / f"reference_{period.id}.json"
@@ -823,9 +878,13 @@ def run_weather_reference(config: BenchmarkConfig, output_dir: Path, *, force: b
             raw_sha256 = sha256_file(raw_path)
         else:
             print(f"[weather-reference] downloading period {period.id}")
-            payload = download_reference_weather(config.locations, period.start, period.end)
+            payload = download_reference_weather(
+                config.locations, period.start, period.end
+            )
             retrieved_at_utc = utc_now_iso()
-            raw_sha256 = write_bytes_atomic(json.dumps(payload).encode("utf-8"), raw_path)
+            raw_sha256 = write_bytes_atomic(
+                json.dumps(payload).encode("utf-8"), raw_path
+            )
             write_raw_cache(
                 raw_path,
                 source_url=OPEN_METEO_ARCHIVE_URL,
@@ -833,15 +892,23 @@ def run_weather_reference(config: BenchmarkConfig, output_dir: Path, *, force: b
                 retrieved_at_utc=retrieved_at_utc,
             )
 
-        frames = normalize_weather_response(payload, config.locations, model=config.weather_model)
+        frames = normalize_weather_response(
+            payload, config.locations, model=config.weather_model
+        )
 
         for location in config.locations:
             name = f"{location.id}_{period.id}"
-            normalized_path = output_dir / "normalized" / "weather_reference" / f"{name}.parquet"
-            manifest_path = output_dir / "manifests" / "weather_reference" / f"{name}.json"
+            normalized_path = (
+                output_dir / "normalized" / "weather_reference" / f"{name}.parquet"
+            )
+            manifest_path = (
+                output_dir / "manifests" / "weather_reference" / f"{name}.json"
+            )
             location_request = narrow_request(request, location)
 
-            if not force and artifact_up_to_date(normalized_path, manifest_path, location_request):
+            if not force and artifact_up_to_date(
+                normalized_path, manifest_path, location_request
+            ):
                 print(f"[weather-reference] up to date: {normalized_path}")
                 continue
 
@@ -866,10 +933,19 @@ def run_weather_reference(config: BenchmarkConfig, output_dir: Path, *, force: b
 
 
 def run_weather_forecasts(
-    config: BenchmarkConfig, output_dir: Path, *, force: bool, max_runs: int | None = None
+    config: BenchmarkConfig,
+    output_dir: Path,
+    *,
+    force: bool,
+    max_runs: int | None = None,
+    shard_index: int = 0,
+    shard_count: int = 1,
 ) -> None:
     preflight_done = False
     runs = iter_configured_forecast_runs(config)
+    if shard_count != 1 or shard_index != 0:
+        runs = itertools.islice(runs, shard_index, None, shard_count)
+        print(f"[weather-forecast] shard {shard_index + 1}/{shard_count}")
     if max_runs is not None:
         runs = itertools.islice(runs, max_runs)
         print(f"[weather-forecast] limited to the first {max_runs} runs")
@@ -887,8 +963,16 @@ def run_weather_forecasts(
 
         def paths(location: Location, name: str = name) -> tuple[Path, Path]:
             return (
-                output_dir / "normalized" / "weather_forecasts" / location.id / f"{name}.parquet",
-                output_dir / "manifests" / "weather_forecasts" / location.id / f"{name}.json",
+                output_dir
+                / "normalized"
+                / "weather_forecasts"
+                / location.id
+                / f"{name}.parquet",
+                output_dir
+                / "manifests"
+                / "weather_forecasts"
+                / location.id
+                / f"{name}.json",
             )
 
         if not force and all(
@@ -911,14 +995,23 @@ def run_weather_forecasts(
             raw_sha256 = sha256_file(raw_path)
         else:
             print(f"[weather-forecast] downloading run {run_id} ({period.id})")
-            payload = download_forecast_run(
-                config.locations,
-                config.weather_model,
-                initialization_time,
-                config.forecast_horizon_hours,
-            )
+            try:
+                payload = download_forecast_run(
+                    config.locations,
+                    config.weather_model,
+                    initialization_time,
+                    config.forecast_horizon_hours,
+                )
+            except LookupError as exc:
+                print(
+                    f"[weather-forecast] unavailable run {run_id}; skipping: {exc}",
+                    flush=True,
+                )
+                continue
             retrieved_at_utc = utc_now_iso()
-            raw_sha256 = write_bytes_atomic(json.dumps(payload).encode("utf-8"), raw_path)
+            raw_sha256 = write_bytes_atomic(
+                json.dumps(payload).encode("utf-8"), raw_path
+            )
             write_raw_cache(
                 raw_path,
                 source_url=OPEN_METEO_SINGLE_RUNS_URL,
@@ -958,7 +1051,9 @@ def run_weather_forecasts(
                     time_column="valid_time_utc",
                 ),
             )
-        print(f"[weather-forecast] wrote run {run_id} ({len(config.locations)} locations)")
+        print(
+            f"[weather-forecast] wrote run {run_id} ({len(config.locations)} locations)"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1024,7 +1119,9 @@ def normalize_price_response(
     df = pd.DataFrame(
         {
             "market_id": zone,
-            "delivery_start_utc": pd.to_datetime(payload["unix_seconds"], unit="s", utc=True),
+            "delivery_start_utc": pd.to_datetime(
+                payload["unix_seconds"], unit="s", utc=True
+            ),
             "price_eur_per_mwh": pd.array(payload["price"], dtype="Float64"),
             "source": "energy_charts",
         }
@@ -1050,12 +1147,18 @@ def run_prices(config: BenchmarkConfig, output_dir: Path, *, force: bool) -> Non
 
         for period in config.periods:
             name = f"{location.market.replace('(', '_').replace(')', '')}_{period.id}"
-            normalized_path = output_dir / "normalized" / "electricity_prices" / f"{name}.parquet"
-            manifest_path = output_dir / "manifests" / "electricity_prices" / f"{name}.json"
+            normalized_path = (
+                output_dir / "normalized" / "electricity_prices" / f"{name}.parquet"
+            )
+            manifest_path = (
+                output_dir / "manifests" / "electricity_prices" / f"{name}.json"
+            )
             raw_path = output_dir / "raw" / "energy_charts" / f"prices_{name}.json"
             request = price_request(location.market, period)
 
-            if not force and artifact_up_to_date(normalized_path, manifest_path, request):
+            if not force and artifact_up_to_date(
+                normalized_path, manifest_path, request
+            ):
                 print(f"[prices] up to date: {normalized_path}")
                 continue
 
@@ -1068,7 +1171,9 @@ def run_prices(config: BenchmarkConfig, output_dir: Path, *, force: bool) -> Non
                 print(f"[prices] downloading {location.market} ({period.id})")
                 payload = download_prices(request)
                 retrieved_at_utc = utc_now_iso()
-                raw_sha256 = write_bytes_atomic(json.dumps(payload).encode("utf-8"), raw_path)
+                raw_sha256 = write_bytes_atomic(
+                    json.dumps(payload).encode("utf-8"), raw_path
+                )
                 write_raw_cache(
                     raw_path,
                     source_url=ENERGY_CHARTS_URL,
@@ -1117,9 +1222,16 @@ SOURCES = {
         config, output_dir, force=args.force
     ),
     "weather-forecast": lambda config, output_dir, args: run_weather_forecasts(
-        config, output_dir, force=args.force, max_runs=args.max_forecast_runs
+        config,
+        output_dir,
+        force=args.force,
+        max_runs=args.max_forecast_runs,
+        shard_index=args.forecast_shard_index,
+        shard_count=args.forecast_shards,
     ),
-    "prices": lambda config, output_dir, args: run_prices(config, output_dir, force=args.force),
+    "prices": lambda config, output_dir, args: run_prices(
+        config, output_dir, force=args.force
+    ),
 }
 
 
@@ -1164,11 +1276,27 @@ def build_arg_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Stop after N forecast runs, for a small subset to develop against",
     )
+    parser.add_argument(
+        "--forecast-shards",
+        type=int,
+        default=1,
+        help="Split configured forecast initialization times into N disjoint shards",
+    )
+    parser.add_argument(
+        "--forecast-shard-index",
+        type=int,
+        default=0,
+        help="Zero-based forecast shard processed by this invocation",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
+    if args.forecast_shards < 1:
+        raise ConfigError("--forecast-shards must be positive")
+    if not 0 <= args.forecast_shard_index < args.forecast_shards:
+        raise ConfigError("--forecast-shard-index must be less than --forecast-shards")
     config = load_config(args.config)
     selected = [args.only] if args.only else DEFAULT_SOURCES
     for name in selected:
