@@ -132,7 +132,26 @@ def test_forecast_selection_uses_latest_complete_as_of_run():
 
     assert selected.shape == (5, 2)
     assert selected[0].tolist() == [3.0, 30.0]
-    assert selected[1:].tolist() == [[1.0, 10.0]] * 4
+    assert selected[1:].tolist() == [[2.0, 20.0]] * 4
+
+
+def test_forecast_selection_holds_last_value_when_run_ends_early():
+    start = pd.Timestamp("2025-01-01", tz="UTC")
+    run = pd.DataFrame(
+        {"T_amb": [1.0, 2.0], "Qdot_gains": [10.0, 20.0]},
+        index=pd.date_range(start, periods=2, freq="15min"),
+    )
+
+    selected = select_forecast_disturbances(
+        {start: run},
+        start,
+        horizon_steps=3,
+        current_disturbance=np.array([1.0, 10.0]),
+        availability_delay_hours=0,
+        correction_fraction=0,
+    )
+
+    assert selected.tolist() == [[1.0, 10.0], [2.0, 20.0], [2.0, 20.0], [2.0, 20.0]]
 
 
 def test_split_manifests_separate_family_and_time():

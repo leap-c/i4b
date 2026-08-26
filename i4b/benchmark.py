@@ -371,6 +371,9 @@ def select_forecast_disturbances(
         return np.repeat(np.asarray(current_disturbance)[None], len(target), axis=0)
     for initialization in reversed(eligible):
         selected = runs[initialization].reindex(target)
+        # Archived runs can end before the 24-hour control horizon. Holding the
+        # last published forecast is causal; using realized future weather is not.
+        selected = selected.ffill()
         if not selected.isna().any().any():
             values = selected[["T_amb", "Qdot_gains"]].to_numpy(copy=True)
             error = float(current_disturbance[0] - values[0, 0])
