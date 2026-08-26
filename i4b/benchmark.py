@@ -385,7 +385,8 @@ def select_forecast_disturbances(
             )
             values[0] = current_disturbance
             return values
-    raise ValueError(f"no archived forecast covers the horizon at {decision_time}")
+    # A missing run or coverage gap must not expose future realized weather.
+    return np.repeat(np.asarray(current_disturbance)[None], len(target), axis=0)
 
 
 def rollout_controller(
