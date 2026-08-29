@@ -44,7 +44,7 @@ def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
 
 
 def evaluation_scenarios(
-    dataset: BenchmarkDataset, split: str = "test"
+    dataset: BenchmarkDataset, split: str = "test", limit: int | None = None
 ) -> list[str]:
     """Scenario ids belonging to a split, sorted.
 
@@ -52,11 +52,19 @@ def evaluation_scenarios(
     building families, and the test split is period B of families that appear nowhere in
     training. Deriving the evaluation set from it keeps closed-loop results comparable with
     open-loop ones and removes the need for anyone to agree on a hand-picked list.
+
+    ``limit`` takes an evenly spaced subset rather than a prefix. Scenario ids sort by
+    country, so the first ten of the test split are three countries out of seven; spacing
+    them keeps a short run representative of the whole set.
     """
     trajectories = dataset.trajectories[["trajectory_id", "scenario_id"]]
     chosen = dataset.split[dataset.split["split"] == split]
     merged = chosen.merge(trajectories, on="trajectory_id", how="left")
-    return sorted(merged["scenario_id"].dropna().unique())
+    scenarios = sorted(merged["scenario_id"].dropna().unique())
+    if limit is None or limit >= len(scenarios):
+        return scenarios
+    step = len(scenarios) / limit
+    return [scenarios[int(i * step)] for i in range(limit)]
 
 
 def load_controller_data(
