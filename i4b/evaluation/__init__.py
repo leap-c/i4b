@@ -5,7 +5,12 @@ dataset tables.
 """
 
 from .closed_loop_eval import run_evaluation
-from .dataset import BenchmarkDataset, load_controller_data, load_dataset
+from .dataset import (
+    BenchmarkDataset,
+    evaluation_scenarios,
+    load_controller_data,
+    load_dataset,
+)
 from .scenario_env import FORECAST_CHANNELS, HISTORY_CHANNELS, STATE_CHANNELS, ScenarioEnv
 
 __all__ = [
@@ -14,6 +19,7 @@ __all__ = [
     "STATE_CHANNELS",
     "BenchmarkDataset",
     "ScenarioEnv",
+    "evaluation_scenarios",
     "load_controller_data",
     "load_dataset",
     "run_evaluation",

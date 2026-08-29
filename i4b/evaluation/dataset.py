@@ -43,6 +43,22 @@ def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
     )
 
 
+def evaluation_scenarios(
+    dataset: BenchmarkDataset, split: str = "test"
+) -> list[str]:
+    """Scenario ids belonging to a split, sorted.
+
+    The corpus already decides which buildings are held out -- ``split.parquet`` assigns whole
+    building families, and the test split is period B of families that appear nowhere in
+    training. Deriving the evaluation set from it keeps closed-loop results comparable with
+    open-loop ones and removes the need for anyone to agree on a hand-picked list.
+    """
+    trajectories = dataset.trajectories[["trajectory_id", "scenario_id"]]
+    chosen = dataset.split[dataset.split["split"] == split]
+    merged = chosen.merge(trajectories, on="trajectory_id", how="left")
+    return sorted(merged["scenario_id"].dropna().unique())
+
+
 def load_controller_data(
     dataset: BenchmarkDataset, controller_id: str, scenario_id: str
 ) -> pd.DataFrame:
