@@ -2,6 +2,15 @@
 
 Wraps ``RoomHeatEnv`` and produces structured dict observations with
 state, history, and forecast. See specs/EVAL_SPEC.md.
+
+History alignment
+-----------------
+A history row carries the state at its timestamp together with the action and
+disturbances that **produced** that state, so a control value always lines up with
+its effect. This is one step later than ``transitions.parquet``, which stores
+``state_t + applied_input_t -> state_(t+1)``: corpus row ``t`` becomes history row
+``t + 1`` here. Seeded and stepped rows follow the same rule, so the convention does
+not change part-way through an episode.
 """
 
 from __future__ import annotations
@@ -225,17 +234,22 @@ class ScenarioEnv:
         self._env.state = self._env._build_observation(state_at_start)
 
         # Seed the history buffer from the recorded trajectory
+        # One extra row: pairing each state with the previous row's inputs consumes one.
         history_start = max(0, self._start_step - self._history_length)
-        history_slice = traj.iloc[history_start : self._start_step]
+        history_slice = traj.iloc[history_start : self._start_step + 1]
 
+        # Recorded rows are state_t + input_t; a history row is the state together with
+        # the input that produced it, so the inputs move one step forward with the state.
         self._history_buffer = []
         self._timestamps = []
-        for _, row in history_slice.iterrows():
-            self._history_buffer.append(
-                {ch: float(row[ch]) for ch in HISTORY_CHANNELS}
-            )
+        inputs = [ch for ch in HISTORY_CHANNELS if ch not in STATE_CHANNELS]
+        rows = list(history_slice.itertuples(index=False))
+        for previous, row in zip(rows, rows[1:]):
+            record = {ch: float(getattr(row, ch)) for ch in STATE_CHANNELS}
+            record.update({ch: float(getattr(previous, ch)) for ch in inputs})
+            self._history_buffer.append(record)
             self._timestamps.append(
-                row["timestamp_utc"].to_datetime64().astype("datetime64[s]")
+                row.timestamp_utc.to_datetime64().astype("datetime64[s]")
             )
 
         self._step_count = 0
@@ -249,8 +263,10 @@ class ScenarioEnv:
         normalized = self._env.normalize_action(np.array(action))
         obs, reward, terminated, truncated, info = self._env.step(normalized)
 
-        # Record the step into the history buffer
-        timestamp = self._env.p.index[self._env.t - 1]
+        # Record the step into the history buffer. ``obs`` is the state reached by this
+        # step, so it is stamped at the end of the interval, beside the action and
+        # disturbances that produced it.
+        timestamp = self._env.p.index[min(self._env.t, len(self._env.p) - 1)]
         pk = self._env.p.iloc[self._env.t - 1]
         record = {
             "T_room": float(obs[0]),
