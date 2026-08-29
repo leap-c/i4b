@@ -1,6 +1,6 @@
 """Closed-loop controller evaluation on I4B benchmark scenarios.
 
-See specs/EVAL_SPEC.md for the full specification.
+See docs/EVAL_SPEC.md for the full specification.
 """
 
 from __future__ import annotations
@@ -12,8 +12,8 @@ from typing import Any, Tuple
 import numpy as np
 import pandas as pd
 
-from dataset import BenchmarkDataset, load_dataset
-from scenario_env import STATE_CHANNELS, ScenarioEnv
+from .dataset import BenchmarkDataset, load_dataset
+from .scenario_env import STATE_CHANNELS, ScenarioEnv
 
 
 def run_evaluation(

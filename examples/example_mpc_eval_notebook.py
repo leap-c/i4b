@@ -51,7 +51,7 @@ def _(Path, dataset_input):
     if str(eval_dir) not in sys.path:
         sys.path.insert(0, str(eval_dir))
 
-    from dataset import load_dataset
+    from i4b.evaluation import load_dataset
 
     dataset = load_dataset(Path(dataset_input.value).expanduser())
     scenarios = dataset.scenarios
@@ -174,7 +174,7 @@ def _(
     n_steps,
     scenario_id,
 ):
-    from closed_loop_eval import run_evaluation
+    from i4b.evaluation import run_evaluation
 
     mo.status.spinner(title="Running MPC evaluation...")
 

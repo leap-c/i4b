@@ -1,7 +1,7 @@
 """Scenario-augmented I4B building environment for closed-loop evaluation.
 
 Wraps ``RoomHeatEnv`` and produces structured dict observations with
-state, history, and forecast. See specs/EVAL_SPEC.md.
+state, history, and forecast. See docs/EVAL_SPEC.md.
 
 History alignment
 -----------------
@@ -22,7 +22,7 @@ import pandas as pd
 
 from i4b.benchmark import load_params, prepare_forecast_runs, select_forecast_disturbances
 
-from dataset import BenchmarkDataset, load_controller_data, load_dataset
+from .dataset import BenchmarkDataset, load_controller_data, load_dataset
 
 
 # ---------------------------------------------------------------------------
@@ -33,9 +33,11 @@ STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
 HISTORY_CHANNELS = ("T_room", "T_wall", "T_hp_ret", "T_hp_sup_applied", "T_amb", "Qdot_gains")
 FORECAST_CHANNELS = ("T_amb", "Qdot_gains")
 
+import i4b_data
+
+# i4b_data is a namespace package, so it has no __file__; __path__ works either way.
 _INTERNAL_GAIN_PROFILE = (
-    Path(__file__).resolve().parents[1]
-    / "i4b_data"
+    Path(next(iter(i4b_data.__path__))).resolve()
     / "profiles"
     / "InternalGains"
     / "ResidentialDetached.csv"

@@ -23,8 +23,8 @@ from i4b.benchmark import load_params
 from i4b.models.model_buildings import Building
 from i4b.controller.mpc.casadi_framework import MPC_solver
 
-from dataset import load_dataset
-from closed_loop_eval import run_evaluation
+from i4b.evaluation import load_dataset
+from i4b.evaluation import run_evaluation
 
 
 def make_mpc_controller(building_params: dict, horizon: int = 12):
