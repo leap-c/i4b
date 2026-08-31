@@ -11,12 +11,12 @@ from .dataset import (
     load_controller_data,
     load_dataset,
 )
-from .scenario_env import FORECAST_CHANNELS, HISTORY_CHANNELS, STATE_CHANNELS, ScenarioEnv
+from .scenario_env import CONTROL_CHANNELS, STATE_CHANNELS, ObsView, ScenarioEnv
 
 __all__ = [
-    "FORECAST_CHANNELS",
-    "HISTORY_CHANNELS",
+    "CONTROL_CHANNELS",
     "STATE_CHANNELS",
+    "ObsView",
     "BenchmarkDataset",
     "ScenarioEnv",
     "evaluation_scenarios",

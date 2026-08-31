@@ -119,6 +119,12 @@ def _job(job: tuple[str, str]) -> dict:
     row = _catalog.loc[_catalog["building_id"] == building_id].iloc[0]
     params = load_params(_catalog, building_id)
     weather = pd.read_parquet(_weather_path(str(row["country_code"]), period_id))
+    weather = weather.rename(columns={
+        "temperature_2m_C": "T_amb",
+        "ghi_W_m2": "ghi",
+        "dni_W_m2": "dni",
+        "dhi_W_m2": "dhi",
+    })
     profile = _root / "i4b_data/profiles/InternalGains/ResidentialDetached.csv"
     disturbances = prepare_disturbances(weather, params, profile)
     nominal_id = f"{building_id}--{period_id}--mpc-nominal"

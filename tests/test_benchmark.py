@@ -97,10 +97,10 @@ def test_disturbance_internal_gains_follow_local_time_across_dst(
             "valid_time_utc": pd.date_range(
                 "2025-03-30T00:00Z", periods=2, freq="1h"
             ),
-            "temperature_2m_C": [5.0, 6.0],
-            "ghi_W_m2": 0.0,
-            "dni_W_m2": 0.0,
-            "dhi_W_m2": 0.0,
+            "T_amb": [5.0, 6.0],
+            "ghi": 0.0,
+            "dni": 0.0,
+            "dhi": 0.0,
         }
     )
     params = {"area_floor": 10.0, "position": {"timezone": "Europe/Berlin"}}

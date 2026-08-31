@@ -16,6 +16,7 @@ not change part-way through an episode.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -26,12 +27,17 @@ from .dataset import BenchmarkDataset, load_controller_data, load_dataset
 
 
 # ---------------------------------------------------------------------------
-# Constants
+# Observation channel definitions
 # ---------------------------------------------------------------------------
+ObsView = Literal["perfect", "realistic"]
 
 STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
-HISTORY_CHANNELS = ("T_room", "T_wall", "T_hp_ret", "T_hp_sup_applied", "T_amb", "Qdot_gains")
-FORECAST_CHANNELS = ("T_amb", "Qdot_gains")
+CONTROL_CHANNELS = ("T_hp_sup_applied",)
+
+_DISTURBANCE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
+    "perfect": ("T_amb", "Qdot_gains"),
+    "realistic": ("T_amb", "ghi", "dni", "dhi"),
+}
 
 import i4b_data
 
@@ -54,12 +60,14 @@ class ForecastProvider:
     def __init__(
         self,
         exogenous: pd.DataFrame,
+        disturbance_channels: tuple[str, ...],
         building_params: dict,
         use_forecast: bool,
         forecasts: pd.DataFrame | None = None,
         location_id: str | None = None,
     ):
-        self._exogenous = exogenous.set_index("timestamp_utc").sort_index()
+        self._exogenous = exogenous
+        self._disturbance_channels = disturbance_channels
         self._use_forecast = use_forecast
         self._runs: dict[pd.Timestamp, pd.DataFrame] | None = None
 
@@ -83,7 +91,7 @@ class ForecastProvider:
     ) -> tuple[np.ndarray, np.ndarray]:
         """Return (timestamps, values) arrays for the forecast horizon.
 
-        values has shape (planning_steps, 2) with columns [T_amb, Qdot_gains].
+        values has shape (planning_steps, len(disturbance_channels)).
         timestamps has shape (planning_steps,) with dtype datetime64.
         """
         delta_t = 900
@@ -103,7 +111,9 @@ class ForecastProvider:
             values = raw[1 : planning_steps + 1]
         else:
             slice_ = self._exogenous.reindex(timestamps)
-            values = slice_[["T_amb", "Qdot_gains"]].to_numpy(dtype=np.float32)
+            values = slice_[list(self._disturbance_channels)].to_numpy(
+                dtype=np.float32
+            )
 
         ts = timestamps.values.astype("datetime64[s]")
         return ts, values
@@ -119,8 +129,12 @@ class ScenarioEnv:
     Wraps ``RoomHeatEnv`` and produces structured dict observations with
     state, history, and forecast.
 
-    Can be constructed with either a ``BenchmarkDataset`` or a path to the
-    dataset directory.
+    Parameters
+    ----------
+    view : ``"perfect"`` | ``"realistic"``
+        Controls which disturbance channels are exposed to the agent.
+        ``"perfect"`` provides pre-computed ``(T_amb, Qdot_gains)``; ``"realistic"``
+        provides raw weather ``(T_amb, ghi, dni, dhi)`` without internal gains.
     """
 
     def __init__(
@@ -134,10 +148,18 @@ class ScenarioEnv:
         planning_steps: int = 12,
         start_step: int | None = None,
         use_forecast: bool = False,
+        view: ObsView = "perfect",
     ):
         if dataset is None:
             dataset = load_dataset(dataset_dir)
         self._dataset = dataset
+
+        # Resolve view-dependent channels
+        self._view = view
+        self._disturbance_channels = _DISTURBANCE_CHANNELS[view]
+        self._history_channels = (
+            STATE_CHANNELS + CONTROL_CHANNELS + self._disturbance_channels
+        )
 
         # Resolve scenario metadata
         scenario_row = dataset.scenarios[
@@ -149,22 +171,14 @@ class ScenarioEnv:
         self._building_params = load_params(dataset.buildings, building_id)
         mdot_hp = self._building_params["mdot_hp"]
 
-        # Load exogenous for this scenario
-        self._exogenous = dataset.exogenous[
+        # Load exogenous for this scenario (timestamp-indexed from here on)
+        exo = dataset.exogenous[
             dataset.exogenous["scenario_id"] == scenario_id
         ].copy()
-        self._exogenous["timestamp_utc"] = pd.to_datetime(
-            self._exogenous["timestamp_utc"], utc=True
-        )
-        self._exogenous = self._exogenous.sort_values(
-            "timestamp_utc", ignore_index=True
-        )
+        exo["timestamp_utc"] = pd.to_datetime(exo["timestamp_utc"], utc=True)
+        self._exogenous = exo.set_index("timestamp_utc").sort_index()
 
-        # Build disturbance DataFrame for RoomHeatEnv
-        disturbances = self._exogenous.set_index("timestamp_utc")[
-            ["T_amb", "Qdot_gains"]
-        ].copy()
-
+        # Build disturbance DataFrame for RoomHeatEnv (always needs T_amb + Qdot_gains)
         from i4b.gym_interface.room_env import RoomHeatEnv
 
         self._env = RoomHeatEnv(
@@ -174,12 +188,13 @@ class ScenarioEnv:
             mdot_HP=mdot_hp,
             internal_gain_profile=str(_INTERNAL_GAIN_PROFILE),
             building_params=self._building_params,
-            disturbances=disturbances,
+            disturbances=self._exogenous[["T_amb", "Qdot_gains"]].copy(),
             integrator="linear",
             return_numpy=True,
         )
 
         # Load initial controller trajectory for history seeding
+        # TODO: verify that trajectory is shortened for initial context
         self._initial_trajectory = load_controller_data(
             dataset, initial_controller_id, scenario_id
         )
@@ -187,6 +202,7 @@ class ScenarioEnv:
         # Forecast provider
         self._forecast_provider = ForecastProvider(
             exogenous=self._exogenous,
+            disturbance_channels=self._disturbance_channels,
             building_params=self._building_params,
             use_forecast=use_forecast,
             forecasts=dataset.forecasts,
@@ -194,8 +210,11 @@ class ScenarioEnv:
         )
 
         # Configuration
+        # TODO: history_length -> max_context_length, initial_context_length as extra param
         self._history_length = history_length
         self._planning_steps = planning_steps
+
+        # TODO: replace with: self._start_step = start_step if start_step is not None else initial_context_length
         self._start_step = start_step if start_step is not None else history_length
         if self._start_step < history_length:
             raise ValueError(
@@ -244,11 +263,11 @@ class ScenarioEnv:
         # the input that produced it, so the inputs move one step forward with the state.
         self._history_buffer = []
         self._timestamps = []
-        inputs = [ch for ch in HISTORY_CHANNELS if ch not in STATE_CHANNELS]
+        input_channels = [ch for ch in self._history_channels if ch not in STATE_CHANNELS]
         rows = list(history_slice.itertuples(index=False))
         for previous, row in zip(rows, rows[1:]):
             record = {ch: float(getattr(row, ch)) for ch in STATE_CHANNELS}
-            record.update({ch: float(getattr(previous, ch)) for ch in inputs})
+            record.update({ch: float(getattr(previous, ch)) for ch in input_channels})
             self._history_buffer.append(record)
             self._timestamps.append(
                 row.timestamp_utc.to_datetime64().astype("datetime64[s]")
@@ -269,15 +288,17 @@ class ScenarioEnv:
         # step, so it is stamped at the end of the interval, beside the action and
         # disturbances that produced it.
         timestamp = self._env.p.index[min(self._env.t, len(self._env.p) - 1)]
-        pk = self._env.p.iloc[self._env.t - 1]
-        record = {
+        record: dict[str, float] = {
             "T_room": float(obs[0]),
             "T_wall": float(obs[1]),
             "T_hp_ret": float(obs[2]),
             "T_hp_sup_applied": float(info["u"]),
-            "T_amb": float(pk["T_amb"]),
-            "Qdot_gains": float(pk["Qdot_gains"]),
         }
+        # Look up view-specific disturbance values from the exogenous data
+        exo_row = self._exogenous.iloc[self._env.t - 1]
+        for ch in self._disturbance_channels:
+            record[ch] = float(exo_row[ch])
+
         self._history_buffer.append(record)
         self._timestamps.append(
             timestamp.to_datetime64().astype("datetime64[s]")
@@ -300,24 +321,22 @@ class ScenarioEnv:
         # History
         n = len(self._history_buffer)
         history = {"timestamp": np.array(self._timestamps, dtype="datetime64[s]")}
-        for ch in HISTORY_CHANNELS:
+        for ch in self._history_channels:
             history[ch] = np.array(
                 [self._history_buffer[i][ch] for i in range(n)], dtype=np.float32
             )
 
         # Forecast
         current_time = self._env.get_cur_time()
-        pk = self._env.get_cur_p()
+        exo_now = self._exogenous.loc[current_time]
         current_disturbance = np.array(
-            [pk["T_amb"], pk["Qdot_gains"]], dtype=np.float32
+            [exo_now[ch] for ch in self._disturbance_channels], dtype=np.float32
         )
         forecast_ts, forecast_vals = self._forecast_provider.get_forecast(
             current_time, self._planning_steps, current_disturbance
         )
-        forecast = {
-            "timestamp": forecast_ts,
-            "T_amb": forecast_vals[:, 0].astype(np.float32),
-            "Qdot_gains": forecast_vals[:, 1].astype(np.float32),
-        }
+        forecast = {"timestamp": forecast_ts}
+        for i, ch in enumerate(self._disturbance_channels):
+            forecast[ch] = forecast_vals[:, i].astype(np.float32)
 
         return {"state": state, "history": history, "forecast": forecast}

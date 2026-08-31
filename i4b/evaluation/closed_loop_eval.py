@@ -24,7 +24,7 @@ def run_evaluation(
     dataset: BenchmarkDataset | None = None,
     initial_controller_id: str = "mpc-nominal",
     history_length: int = 96,
-    planning_steps: int = 12,
+    planning_steps: int = 96,
     n_evaluation_steps: int | None = None,
     start_step: int | None = None,
     use_forecast: bool = False,
