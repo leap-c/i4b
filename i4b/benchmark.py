@@ -245,13 +245,7 @@ def prepare_disturbances(
     delta_t: int = 900,
 ) -> pd.DataFrame:
     """Create 15-minute I4B disturbances from normalized hourly reference weather."""
-    required = {
-        "valid_time_utc",
-        "temperature_2m_C",
-        "ghi_W_m2",
-        "dni_W_m2",
-        "dhi_W_m2",
-    }
+    required = {"valid_time_utc", "T_amb", "ghi", "dni", "dhi"}
     missing = required - set(weather.columns)
     if missing:
         raise ValueError(f"weather is missing columns: {sorted(missing)}")
@@ -262,10 +256,10 @@ def prepare_disturbances(
         index = index.tz_convert("UTC")
     source = pd.DataFrame(
         {
-            "T_amb": weather["temperature_2m_C"].to_numpy(),
-            "ghi": weather["ghi_W_m2"].to_numpy(),
-            "dni": weather["dni_W_m2"].to_numpy(),
-            "dhi": weather["dhi_W_m2"].to_numpy(),
+            "T_amb": weather["T_amb"].to_numpy(),
+            "ghi": weather["ghi"].to_numpy(),
+            "dni": weather["dni"].to_numpy(),
+            "dhi": weather["dhi"].to_numpy(),
         },
         index=index,
     ).sort_index()
@@ -316,10 +310,10 @@ def prepare_forecast_runs(
     required = {
         "initialization_time_utc",
         "valid_time_utc",
-        "temperature_2m_C",
-        "ghi_W_m2",
-        "dni_W_m2",
-        "dhi_W_m2",
+        "T_amb",
+        "ghi",
+        "dni",
+        "dhi",
     }
     missing = required - set(forecasts.columns)
     if missing:
