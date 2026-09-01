@@ -59,6 +59,20 @@ def _aprbs(rng: np.random.Generator, steps: int, amplitude: float) -> np.ndarray
     return np.concatenate(out)[:steps]
 
 
+def gain_terms(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]:
+    """The numerator and denominator of the slope, so several windows can be pooled.
+
+    Deviations are taken about the mean across probes, so whatever the probes had in common --
+    weather, the starting state, any constant bias -- cancels, and only the response to
+    *differences* in control survives.
+    """
+    if actual.shape != predicted.shape:
+        raise ValueError(f"shape mismatch: {actual.shape} vs {predicted.shape}")
+    plant = actual - actual.mean(axis=0)
+    model = predicted - predicted.mean(axis=0)
+    return float((model * plant).sum()), float((plant**2).sum())
+
+
 def control_gain(actual: np.ndarray, predicted: np.ndarray) -> float:
     """Slope of the model's predicted deviation on the plant's, over the probes.
 
@@ -66,11 +80,7 @@ def control_gain(actual: np.ndarray, predicted: np.ndarray) -> float:
     whatever the control had in common with every probe -- weather, the starting state, any
     constant bias -- cancels, and only the response to *differences* in control is scored.
     """
-    if actual.shape != predicted.shape:
-        raise ValueError(f"shape mismatch: {actual.shape} vs {predicted.shape}")
-    plant = actual - actual.mean(axis=0)
-    model = predicted - predicted.mean(axis=0)
-    denominator = (plant**2).sum()
-    if denominator <= 0:
+    cross, square = gain_terms(actual, predicted)
+    if square <= 0:
         return float("nan")  # the probes did not move the plant; nothing to be right about
-    return float((model * plant).sum() / denominator)
+    return cross / square

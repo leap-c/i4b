@@ -24,7 +24,7 @@ from i4b.models.model_buildings import Building
 from i4b.controller.mpc.casadi_framework import MPC_solver
 
 from i4b_bench import load_dataset
-from i4b_bench import run_evaluation
+from i4b_bench import eval_scenario_closed_loop
 
 
 def make_mpc_controller(building_params: dict, horizon: int = 12):
@@ -135,7 +135,7 @@ def main():
 
     controller = make_mpc_controller(building_params, horizon=args.horizon)
 
-    results = run_evaluation(
+    results = eval_scenario_closed_loop(
         dataset=dataset,
         scenario_id=args.scenario,
         controller=controller,

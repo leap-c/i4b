@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from i4b_bench import ScenarioEnv, evaluation_scenarios, load_dataset, run_evaluation
+from i4b_bench import ScenarioEnv, evaluation_scenarios, load_dataset, eval_scenario_closed_loop
 
 DATASET = Path(
     os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production")
@@ -63,7 +63,7 @@ def test_history_is_contiguous_and_forecast_follows_it(dataset, scenario):
 
 
 def test_run_evaluation_reports_the_agreed_quantities(dataset, scenario):
-    result = run_evaluation(
+    result = eval_scenario_closed_loop(
         scenario, lambda obs: (30.0, None), dataset=dataset, max_context_length=96,
         planning_steps=96, n_evaluation_steps=8,
     )

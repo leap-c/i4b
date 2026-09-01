@@ -174,11 +174,11 @@ def _(
     n_steps,
     scenario_id,
 ):
-    from i4b_bench import run_evaluation
+    from i4b_bench import eval_scenario_closed_loop
 
     mo.status.spinner(title="Running MPC evaluation...")
 
-    results = run_evaluation(
+    results = eval_scenario_closed_loop(
         dataset=dataset,
         scenario_id=scenario_id,
         controller=mpc_controller,
