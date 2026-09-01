@@ -1,128 +1,37 @@
 """Scenario-augmented I4B building environment for closed-loop evaluation.
 
-Wraps ``RoomHeatEnv`` and produces structured dict observations with
-state, history, and forecast. See docs/EVAL_SPEC.md.
+Wraps ``RoomHeatEnv`` and produces the structured observation `i4b_bench.observation` defines.
+See docs/EVAL_SPEC.md.
 
 History alignment
 -----------------
-A history row carries the state at its timestamp together with the action and
-disturbances that **produced** that state, so a control value always lines up with
-its effect. This is one step later than ``transitions.parquet``, which stores
-``state_t + applied_input_t -> state_(t+1)``: corpus row ``t`` becomes history row
-``t + 1`` here. Seeded and stepped rows follow the same rule, so the convention does
-not change part-way through an episode.
+A history row carries the state at its timestamp together with the action and disturbances that
+**produced** that state, so a control value always lines up with its effect. This is one step
+later than ``transitions.parquet``, which stores ``state_t + applied_input_t -> state_(t+1)``:
+corpus row ``t`` becomes history row ``t + 1`` here. Seeded and stepped rows follow the same
+rule, so the convention does not change part-way through an episode.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
 
 import numpy as np
 import pandas as pd
 
-from .corpus import load_params, prepare_forecast_runs, select_forecast_disturbances
-
+from .corpus import load_params
 from .dataset import BenchmarkDataset, load_controller_data, load_dataset
-
-
-# ---------------------------------------------------------------------------
-# Observation channel definitions
-# ---------------------------------------------------------------------------
-ObsView = Literal["perfect", "realistic"]
-
-STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
-CONTROL_CHANNELS = ("T_hp_sup_applied",)
-
-_DISTURBANCE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
-    "perfect": ("T_amb", "Qdot_gains"),
-    "realistic": ("T_amb", "ghi", "dni", "dhi"),
-}
-
-import i4b_data
-
-# i4b_data is a namespace package, so it has no __file__; __path__ works either way.
-_INTERNAL_GAIN_PROFILE = (
-    Path(next(iter(i4b_data.__path__))).resolve()
-    / "profiles"
-    / "InternalGains"
-    / "ResidentialDetached.csv"
+from .forecast import ForecastProvider
+from .observation import (
+    CONTROL_CHANNELS,
+    DISTURBANCE_CHANNELS,
+    STATE_CHANNELS,
+    ObsView,
+    build_observation,
+    history_channels,
+    internal_gain_profile,
 )
 
-
-# ---------------------------------------------------------------------------
-# Forecast provider
-# ---------------------------------------------------------------------------
-
-class ForecastProvider:
-    """Provides exogenous forecasts (oracle or archived) at each timestep."""
-
-    def __init__(
-        self,
-        exogenous: pd.DataFrame,
-        disturbance_channels: tuple[str, ...],
-        building_params: dict,
-        use_forecast: bool,
-        forecasts: pd.DataFrame | None = None,
-        location_id: str | None = None,
-    ):
-        self._exogenous = exogenous
-        self._disturbance_channels = disturbance_channels
-        self._use_forecast = use_forecast
-        self._runs: dict[pd.Timestamp, pd.DataFrame] | None = None
-
-        if use_forecast:
-            if forecasts is None or location_id is None:
-                raise ValueError(
-                    "forecasts and location_id are required when use_forecast=True"
-                )
-            location_forecasts = forecasts[forecasts["location_id"] == location_id]
-            self._runs = prepare_forecast_runs(
-                location_forecasts,
-                building_params,
-                _INTERNAL_GAIN_PROFILE,
-            )
-
-    def get_forecast(
-        self,
-        decision_time: pd.Timestamp,
-        planning_steps: int,
-        current_disturbance: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Return (timestamps, values) arrays for the forecast horizon.
-
-        values has shape (planning_steps, len(disturbance_channels)).
-        timestamps has shape (planning_steps,) with dtype datetime64.
-        """
-        delta_t = 900
-        future_start = decision_time + pd.Timedelta(seconds=delta_t)
-        timestamps = pd.date_range(
-            future_start, periods=planning_steps, freq=f"{delta_t}s"
-        )
-
-        if self._use_forecast and self._runs is not None:
-            raw = select_forecast_disturbances(
-                self._runs,
-                decision_time,
-                planning_steps,
-                current_disturbance,
-                channels=self._disturbance_channels,
-            )
-            # raw[0] is decision_time (current), raw[1:] is the forecast
-            values = raw[1 : planning_steps + 1]
-        else:
-            slice_ = self._exogenous.reindex(timestamps)
-            values = slice_[list(self._disturbance_channels)].to_numpy(
-                dtype=np.float32
-            )
-
-        ts = timestamps.values.astype("datetime64[s]")
-        return ts, values
-
-
-# ---------------------------------------------------------------------------
-# Scenario environment
-# ---------------------------------------------------------------------------
 
 class ScenarioEnv:
     """Gymnasium-style environment for closed-loop evaluation on a benchmark scenario.
@@ -160,10 +69,8 @@ class ScenarioEnv:
 
         # Resolve view-dependent channels
         self._view = view
-        self._disturbance_channels = _DISTURBANCE_CHANNELS[view]
-        self._history_channels = (
-            STATE_CHANNELS + CONTROL_CHANNELS + self._disturbance_channels
-        )
+        self._disturbance_channels = DISTURBANCE_CHANNELS[view]
+        self._history_channels = history_channels(view)
 
         # Resolve scenario metadata
         scenario_row = dataset.scenarios[
@@ -190,11 +97,15 @@ class ScenarioEnv:
             building=None,
             method="4R3C",
             mdot_HP=mdot_hp,
-            internal_gain_profile=str(_INTERNAL_GAIN_PROFILE),
+            internal_gain_profile=str(internal_gain_profile()),
             building_params=self._building_params,
             disturbances=self._exogenous[["T_amb", "Qdot_gains"]].copy(),
-            integrator="linear",
-            return_numpy=True,
+            # Pinned, not left to RoomHeatEnv's default. The corpus was integrated with the
+            # legacy backend, so evaluating against it with a different integrator would score
+            # controllers in a slightly different world than the recorded baselines they are
+            # compared to (measured: 6.4 mK worst case). It is also ~30x faster per step, which
+            # matters because the control-response metric rolls the plant once per probe.
+            backend="legacy",
         )
 
         # Load initial controller trajectory for history seeding
@@ -210,6 +121,7 @@ class ScenarioEnv:
             use_forecast=use_forecast,
             forecasts=dataset.forecasts,
             location_id=scenario_row.get("location_id"),
+            cache_key=(str(scenario_row.get("location_id")), str(building_id)),
         )
 
         # Configuration
@@ -349,4 +261,4 @@ class ScenarioEnv:
         for i, ch in enumerate(self._disturbance_channels):
             forecast[ch] = forecast_vals[:, i].astype(np.float32)
 
-        return {"state": state, "history": history, "forecast": forecast}
+        return build_observation(state, history, forecast)

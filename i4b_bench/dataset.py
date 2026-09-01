@@ -2,10 +2,43 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
 import pandas as pd
+import pyarrow.compute as pc
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+
+from .observation import CONTROL_CHANNELS, STATE_CHANNELS
+
+STEP = pd.Timedelta(minutes=15)
+PER_DAY = 96
+
+#: How hard each controller drives the supply temperature, from MPC left alone to a pure
+#: open-loop campaign. The MPC offsets shift the comfort bound, not the excitation. Ordered, so
+#: any frame carrying the label sorts and groups from least to most excited without a caller
+#: having to remember an ordering.
+EXCITATION = {
+    "mpc-nominal": "none",
+    "mpc-offset-plus-2K": "none",
+    "mpc-offset-minus-2K": "none",
+    "mpc-aprbs-low": "low",
+    "mpc-aprbs-medium": "medium",
+    "mpc-aprbs-high": "high",
+    "open-loop-aprbs": "open loop 1.5K",
+    "open-loop-aprbs-3K": "open loop 3K",
+    "open-loop-aprbs-6K": "open loop 6K",
+    "open-loop-aprbs-12K": "open loop 12K",
+    "open-loop-aprbs-24K": "open loop 24K",
+}
+EXCITATION_DTYPE = pd.CategoricalDtype(
+    ["none", "low", "medium", "high",
+     "open loop 1.5K", "open loop 3K", "open loop 6K", "open loop 12K", "open loop 24K"],
+    ordered=True,
+)
 
 
 _DEFAULT_DIR = Path(__file__).resolve().parents[2] / "production"
@@ -107,3 +140,82 @@ def load_controller_data(
 
     frame = frame.merge(exo, on="timestamp_utc", how="left")
     return frame.sort_values("timestamp_utc", ignore_index=True)
+
+
+def utc(value) -> pd.Timestamp:
+    value = pd.Timestamp(value)
+    return value.tz_localize("UTC") if value.tzinfo is None else value.tz_convert("UTC")
+
+
+def aligned(frame: pd.DataFrame, view_disturbances: tuple[str, ...]) -> pd.DataFrame:
+    """Move each row's applied action and disturbances onto the state they produced.
+
+    `transitions.parquet` stores ``state_t + applied_input_t -> state_(t+1)``; the observation
+    contract pairs a state with what produced it. This is the same one-step shift
+    `ScenarioEnv` documents, applied to a corpus read instead of a rolling buffer.
+    """
+    inputs = [*CONTROL_CHANNELS, *view_disturbances]
+    return frame[list(STATE_CHANNELS)].join(frame[inputs].shift(1)).iloc[1:]
+
+
+@cache
+def shard_index(root: Path, cache_path: Path | None = None) -> pd.Series:
+    """trajectory_id -> shard file. Scanning one column of every shard is worth caching."""
+    if cache_path is not None and Path(cache_path).exists():
+        return pd.read_parquet(cache_path).set_index("trajectory_id")["shard"]
+    parts = [
+        pd.DataFrame(
+            {
+                "trajectory_id": pq.read_table(shard, columns=["trajectory_id"])[
+                    "trajectory_id"
+                ].unique(),
+                "shard": shard.name,
+            }
+        )
+        for shard in sorted((Path(root) / "transitions").glob("part-*.parquet"))
+    ]
+    if not parts:
+        raise FileNotFoundError(f"no transition shards under {root}")
+    index = pd.concat(parts, ignore_index=True).drop_duplicates("trajectory_id")
+    if cache_path is not None:
+        Path(cache_path).parent.mkdir(parents=True, exist_ok=True)
+        index.to_parquet(cache_path, index=False)
+    return index.set_index("trajectory_id")["shard"]
+
+
+def read_window(
+    root: Path,
+    trajectory_id: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    *,
+    cache_path: Path | None = None,
+) -> pd.DataFrame:
+    """One trajectory between two timestamps, tz dropped -- several model libraries reject it."""
+    shard = Path(root) / "transitions" / shard_index(Path(root), cache_path)[trajectory_id]
+    table = ds.dataset(shard).to_table(
+        filter=(pc.field("trajectory_id") == trajectory_id)
+        & (pc.field("timestamp_utc") >= utc(start).to_pydatetime())
+        & (pc.field("timestamp_utc") <= utc(end).to_pydatetime())
+    )
+    frame = table.to_pandas().set_index("timestamp_utc").sort_index()
+    frame.index = frame.index.tz_convert(None)
+    return frame
+
+
+@dataclass(frozen=True)
+class BenchmarkSetting:
+    """What must not vary between runs for two results to be comparable."""
+
+    split: str = "test"
+    view: str = "realistic"
+    use_forecast: bool = True
+    seeds: int = 10
+    planning_steps: int = 96
+    history_lengths: tuple[int, ...] = (96, 2 * 96, 5 * 96, 21 * 96)
+    max_context_days: int = 21
+    probe_amplitudes: tuple[float, ...] = (2.0, 6.0)
+    probes: int = 5
+
+
+BENCHMARK = BenchmarkSetting()
