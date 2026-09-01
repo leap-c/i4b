@@ -26,19 +26,19 @@ def scenario(dataset):
     return evaluation_scenarios(dataset, "test")[0]
 
 
-@pytest.mark.parametrize("history_length", [96, 672])
-def test_current_state_is_the_last_history_row(dataset, scenario, history_length):
+@pytest.mark.parametrize("max_context_length", [96, 672])
+def test_current_state_is_the_last_history_row(dataset, scenario, max_context_length):
     """EVAL_SPEC: `state` values "also appear as the last entry in `history`".
 
     The seeded and the generated halves of the buffer have to agree about this, or a
     controller's context changes convention part-way through an episode.
     """
     env = ScenarioEnv(
-        scenario, dataset=dataset, history_length=history_length, planning_steps=96,
+        scenario, dataset=dataset, max_context_length=max_context_length, planning_steps=96,
         start_step=1000,
     )
     obs, _ = env.reset()
-    assert len(obs["history"]["T_room"]) == history_length
+    assert len(obs["history"]["T_room"]) == max_context_length
 
     for channel in ("T_room", "T_wall", "T_hp_ret"):
         assert np.isclose(obs["history"][channel][-1], obs["state"][channel], atol=1e-4)
@@ -51,7 +51,7 @@ def test_current_state_is_the_last_history_row(dataset, scenario, history_length
 
 def test_history_is_contiguous_and_forecast_follows_it(dataset, scenario):
     env = ScenarioEnv(
-        scenario, dataset=dataset, history_length=96, planning_steps=96, start_step=1000
+        scenario, dataset=dataset, max_context_length=96, planning_steps=96, start_step=1000
     )
     obs, _ = env.reset()
     history, forecast = obs["history"]["timestamp"], obs["forecast"]["timestamp"]
@@ -64,7 +64,7 @@ def test_history_is_contiguous_and_forecast_follows_it(dataset, scenario):
 
 def test_run_evaluation_reports_the_agreed_quantities(dataset, scenario):
     result = run_evaluation(
-        scenario, lambda obs: (30.0, None), dataset=dataset, history_length=96,
+        scenario, lambda obs: (30.0, None), dataset=dataset, max_context_length=96,
         planning_steps=96, n_evaluation_steps=8,
     )
     assert set(result) == {

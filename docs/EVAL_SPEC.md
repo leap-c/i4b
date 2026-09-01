@@ -24,8 +24,8 @@ The environment produces a nested dictionary observation at each timestep:
         "T_hp_ret": float,
     },
     "history": {
-        "timestamp": np.ndarray,       # dtype=datetime64, shape (history_length,)
-        "T_room": np.ndarray,          # shape (history_length,)
+        "timestamp": np.ndarray,       # dtype=datetime64, shape (<= max_context_length,)
+        "T_room": np.ndarray,          # shape (<= max_context_length,)
         "T_wall": np.ndarray,
         "T_hp_ret": np.ndarray,
         "T_hp_sup_applied": np.ndarray, # past actions
@@ -45,7 +45,7 @@ The environment produces a nested dictionary observation at each timestep:
 - `state` holds the current scalar values. These also appear as the last
   entry in `history` (intentional overlap for convenience).
 - `history` includes past states, past actions, and past exogenous data.
-  Its length is at most `history_length` rows. Before enough steps have
+  Its length is at most `max_context_length` rows. Before enough steps have
   elapsed, it may be shorter (padded or truncated — implementation choice).
 - `forecast` contains future exogenous data starting from the next timestep.
   Its length is at most `planning_steps` rows.
@@ -113,17 +113,18 @@ maps this signature to `(state_dict, future_disturbances) -> action_C`.
 | `scenario_id`          | `str`            | Required. Identifies building + period.                         |
 | `controller`           | callable         | Required. See controller interface above.                       |
 | `initial_controller_id`| `str`            | `"mpc-nominal"`. Controller whose recorded trajectory provides the initial history. |
-| `history_length`       | `int`            | Required. Number of past timesteps provided to the controller.  |
+| `max_context_length`   | `int`            | Required. Maximum number of past timesteps in the history buffer. |
+| `initial_context_length` | `int` or `None` | Number of past timesteps seeded from the recorded trajectory on reset. Defaults to `max_context_length`. Must be <= `max_context_length`. |
 | `planning_steps`       | `int`            | Required. Number of future timesteps in the forecast.           |
 | `n_evaluation_steps`   | `int`            | Number of timesteps to evaluate. Defaults to all remaining steps after the start. |
-| `start_step`           | `int` or `None`  | Timestep offset at which evaluation begins. Defaults to `history_length` (the earliest possible start). Must be >= `history_length`. |
+| `start_step`           | `int` or `None`  | Timestep offset at which evaluation begins. Defaults to `initial_context_length` (the earliest possible start). Must be >= `initial_context_length`. |
 | `use_forecast`         | `bool`           | `True` = use archived forecasts from `forecasts.parquet`. `False` = oracle weather from `exogenous.parquet`. |
 
 The evaluation window is determined by `start_step` and `n_evaluation_steps`.
 If `n_evaluation_steps` is not specified, evaluation runs from `start_step`
 to the end of the scenario. The implementation validates that enough recorded
 data exists before `start_step` to fill the initial history of length
-`history_length`.
+`initial_context_length`.
 
 ## Forecast Reconstruction
 

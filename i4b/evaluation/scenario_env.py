@@ -135,6 +135,8 @@ class ScenarioEnv:
         Controls which disturbance channels are exposed to the agent.
         ``"perfect"`` provides pre-computed ``(T_amb, Qdot_gains)``; ``"realistic"``
         provides raw weather ``(T_amb, ghi, dni, dhi)`` without internal gains.
+    start_step : int | None
+        The timestep at which to start the evaluation (time-wise steps are determined by the scenario time discretization).
     """
 
     def __init__(
@@ -144,7 +146,8 @@ class ScenarioEnv:
         dataset: BenchmarkDataset | None = None,
         dataset_dir: str | Path | None = None,
         initial_controller_id: str = "mpc-nominal",
-        history_length: int = 96,
+        max_context_length: int = 96,
+        initial_context_length: int | None = None,
         planning_steps: int = 12,
         start_step: int | None = None,
         use_forecast: bool = False,
@@ -194,7 +197,6 @@ class ScenarioEnv:
         )
 
         # Load initial controller trajectory for history seeding
-        # TODO: verify that trajectory is shortened for initial context
         self._initial_trajectory = load_controller_data(
             dataset, initial_controller_id, scenario_id
         )
@@ -210,15 +212,22 @@ class ScenarioEnv:
         )
 
         # Configuration
-        # TODO: history_length -> max_context_length, initial_context_length as extra param
-        self._history_length = history_length
+        self._max_context_length = max_context_length
+        self._initial_context_length = (
+            initial_context_length if initial_context_length is not None else max_context_length
+        )
+        if self._initial_context_length > max_context_length:
+            raise ValueError(
+                f"initial_context_length ({self._initial_context_length}) must be "
+                f"<= max_context_length ({max_context_length})"
+            )
         self._planning_steps = planning_steps
 
-        # TODO: replace with: self._start_step = start_step if start_step is not None else initial_context_length
-        self._start_step = start_step if start_step is not None else history_length
-        if self._start_step < history_length:
+        self._start_step = start_step if start_step is not None else self._initial_context_length
+        if self._start_step < self._initial_context_length:
             raise ValueError(
-                f"start_step ({self._start_step}) must be >= history_length ({history_length})"
+                f"start_step ({self._start_step}) must be >= "
+                f"initial_context_length ({self._initial_context_length})"
             )
         if self._start_step > len(self._initial_trajectory):
             raise ValueError(
@@ -256,7 +265,7 @@ class ScenarioEnv:
 
         # Seed the history buffer from the recorded trajectory
         # One extra row: pairing each state with the previous row's inputs consumes one.
-        history_start = max(0, self._start_step - self._history_length)
+        history_start = max(0, self._start_step - self._initial_context_length)
         history_slice = traj.iloc[history_start : self._start_step + 1]
 
         # Recorded rows are state_t + input_t; a history row is the state together with
@@ -305,9 +314,9 @@ class ScenarioEnv:
         )
 
         # Trim history buffer to max length
-        if len(self._history_buffer) > self._history_length:
-            self._history_buffer = self._history_buffer[-self._history_length :]
-            self._timestamps = self._timestamps[-self._history_length :]
+        if len(self._history_buffer) > self._max_context_length:
+            self._history_buffer = self._history_buffer[-self._max_context_length :]
+            self._timestamps = self._timestamps[-self._max_context_length :]
 
         self._step_count += 1
         return self._build_observation(), reward, terminated, truncated, info

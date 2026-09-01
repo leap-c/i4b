@@ -115,7 +115,7 @@ def main():
                         help="Number of evaluation steps (default: 96 = 1 day)")
     parser.add_argument("--horizon", type=int, default=12,
                         help="MPC horizon in steps (default: 12 = 3 hours)")
-    parser.add_argument("--history-length", type=int, default=96)
+    parser.add_argument("--max-context-length", type=int, default=96)
     args = parser.parse_args()
 
     print(f"Loading dataset from {args.dataset} ...")
@@ -139,7 +139,7 @@ def main():
         dataset=dataset,
         scenario_id=args.scenario,
         controller=controller,
-        history_length=args.history_length,
+        max_context_length=args.max_context_length,
         planning_steps=args.horizon + 1,  # forecast needs horizon+1 for MPC
         n_evaluation_steps=args.steps,
         use_forecast=False,  # oracle weather, same as dataset generation

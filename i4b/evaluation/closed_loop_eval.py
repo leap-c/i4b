@@ -23,7 +23,8 @@ def run_evaluation(
     dataset_dir: str | Path | None = None,
     dataset: BenchmarkDataset | None = None,
     initial_controller_id: str = "mpc-nominal",
-    history_length: int = 96,
+    max_context_length: int = 96,
+    initial_context_length: int | None = None,
     planning_steps: int = 96,
     n_evaluation_steps: int | None = None,
     start_step: int | None = None,
@@ -45,14 +46,17 @@ def run_evaluation(
         Useful to avoid reloading when running multiple evaluations.
     initial_controller_id : str
         Controller whose recorded trajectory provides the initial history.
-    history_length : int
-        Number of past timesteps provided to the controller.
+    max_context_length : int
+        Maximum number of past timesteps in the history buffer.
+    initial_context_length : int or None
+        Number of past timesteps seeded from the recorded trajectory on reset.
+        Defaults to ``max_context_length``.
     planning_steps : int
         Number of future timesteps in the forecast.
     n_evaluation_steps : int or None
         Number of steps to evaluate. None = run to end of scenario.
     start_step : int or None
-        Timestep offset to begin evaluation. None = ``history_length``.
+        Timestep offset to begin evaluation. None = ``initial_context_length``.
     use_forecast : bool
         True = archived forecasts, False = oracle weather.
 
@@ -74,7 +78,8 @@ def run_evaluation(
         scenario_id,
         dataset=dataset,
         initial_controller_id=initial_controller_id,
-        history_length=history_length,
+        max_context_length=max_context_length,
+        initial_context_length=initial_context_length,
         planning_steps=planning_steps,
         start_step=start_step,
         use_forecast=use_forecast,

@@ -75,7 +75,7 @@ def _(mo, scenarios):
         start=12, stop=672, step=12, value=96, label="Evaluation steps"
     )
     history_select = mo.ui.slider(
-        start=12, stop=672, step=12, value=96, label="History length"
+        start=12, stop=672, step=12, value=96, label="Max context length"
     )
     mo.vstack([
         mo.md("## Configuration"),
@@ -182,7 +182,7 @@ def _(
         dataset=dataset,
         scenario_id=scenario_id,
         controller=mpc_controller,
-        history_length=history_select.value,
+        max_context_length=history_select.value,
         planning_steps=horizon + 1,
         n_evaluation_steps=n_steps,
         use_forecast=False,
