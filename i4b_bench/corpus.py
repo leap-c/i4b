@@ -408,13 +408,18 @@ def select_forecast_disturbances(
         selected = selected.ffill()
         if not selected.isna().any().any():
             values = selected[channels].to_numpy(copy=True)
-            error = float(current_disturbance[0] - values[0, 0])
-            lead_hours = np.arange(len(target)) * delta_t / 3600
-            values[:, 0] += (
-                correction_fraction
-                * error
-                * np.exp(-lead_hours / correction_decay_hours)
-            )
+            # Correct the ambient channel by name. It happens to be first in both current
+            # views, which is exactly the kind of coincidence that breaks when a view gains a
+            # channel or a second zone reorders one.
+            if "T_amb" in channels:
+                ambient = channels.index("T_amb")
+                error = float(current_disturbance[ambient] - values[0, ambient])
+                lead_hours = np.arange(len(target)) * delta_t / 3600
+                values[:, ambient] += (
+                    correction_fraction
+                    * error
+                    * np.exp(-lead_hours / correction_decay_hours)
+                )
             values[0] = current_disturbance
             return values
     # A missing run or coverage gap must not expose future realized weather.

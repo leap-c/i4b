@@ -15,13 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from i4b_bench import (
-    DISTURBANCE_CHANNELS,
-    TARGET_CHANNELS,
-    ScenarioEnv,
-    control_gain,
-    load_dataset,
-)
+from i4b_bench import DISTURBANCE_CHANNELS, ScenarioEnv, control_gain, load_dataset
 from i4b_bench.open_loop_eval import eval_scenario_open_loop
 
 DATASET = Path(
@@ -95,13 +89,12 @@ def test_realistic_forecast_is_not_the_realised_weather(dataset, scenario):
 
 @needs_dataset
 def test_a_model_never_sees_the_wall_temperature(dataset, scenario):
-    """Nothing measures a wall, so `T_wall` is not among the channels a predictor is scored on."""
-    assert "T_wall" not in TARGET_CHANNELS
+    """Nothing measures a wall, so it never reaches the covariates a predictor is handed."""
     seen = {}
 
     def predictor(observations, controls):
         seen["forecast"] = set(observations[0]["forecast"])
-        return [np.zeros((u.shape[0], u.shape[1], len(TARGET_CHANNELS))) for u in controls]
+        return [{"T_room": np.zeros(u.shape)} for u in controls]
 
     eval_scenario_open_loop(scenario, predictor, dataset=dataset, seeds=1, use_forecast=False)
     assert "T_wall" not in seen["forecast"]

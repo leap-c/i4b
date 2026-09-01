@@ -12,14 +12,83 @@ from typing import Any, Tuple
 
 import pandas as pd
 
-from .dataset import (
-    BENCHMARK,
-    BenchmarkDataset,
-    BenchmarkSetting,
-    evaluation_scenarios,
-    load_dataset,
-)
+from dataclasses import dataclass
+
+from .dataset import BenchmarkDataset, evaluation_scenarios, load_dataset
 from .scenario_env import ScenarioEnv
+
+
+@dataclass(frozen=True)
+class ClosedLoopBenchmark:
+    """What must not vary between closed-loop runs.
+
+    These were defaults on `eval_scenario_closed_loop` rather than configuration, so a
+    benchmark run could not pin them and two runs could differ silently on the context length
+    or the controller their history was seeded from.
+    """
+
+    split: str = "test"
+    view: str = "realistic"
+    use_forecast: bool = True
+    planning_steps: int = 96
+    max_context_length: int = 96
+    initial_context_length: int | None = None
+    initial_controller_id: str = "mpc-nominal"
+    evaluation_steps: int | None = None
+    #: A controller would correct an archived forecast against its own sensor, so unlike the
+    #: open loop this is not zero.
+    forecast_correction: float = 0.5
+
+
+CLOSED_LOOP = ClosedLoopBenchmark()
+
+
+def eval_benchmark_closed_loop(
+    controller: Callable[[dict], Tuple[float, dict | None]],
+    *,
+    dataset: BenchmarkDataset | None = None,
+    dataset_dir: str | Path | None = None,
+    setting: ClosedLoopBenchmark = CLOSED_LOOP,
+    scenarios: Sequence[str] | None = None,
+    limit: int | None = None,
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Run a controller over the agreed benchmark, one row per scenario.
+
+    The open-loop counterpart batches its model calls; this one cannot. Every action depends on
+    the state the previous action produced, so the scenarios are simply run in turn.
+    """
+    if dataset is None:
+        dataset = load_dataset(dataset_dir)
+    if scenarios is None:
+        scenarios = evaluation_scenarios(dataset, setting.split, limit=limit)
+
+    rows = []
+    for scenario_id in scenarios:
+        result = eval_scenario_closed_loop(
+            scenario_id,
+            controller,
+            dataset=dataset,
+            initial_controller_id=setting.initial_controller_id,
+            max_context_length=setting.max_context_length,
+            initial_context_length=setting.initial_context_length,
+            planning_steps=setting.planning_steps,
+            n_evaluation_steps=setting.evaluation_steps,
+            use_forecast=setting.use_forecast,
+            **kwargs,
+        )
+        rows.append(
+            {
+                "scenario_id": scenario_id,
+                "view": setting.view,
+                "use_forecast": setting.use_forecast,
+                "steps": len(result["trajectory"]),
+                "energy_kwh": result["energy_kwh"],
+                "comfort_violation_degree_hours": result["comfort_violation_degree_hours"],
+                "planning_seconds_mean": result["planning_seconds_mean"],
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def eval_scenario_closed_loop(
@@ -131,47 +200,3 @@ def eval_scenario_closed_loop(
         "comfort_violation_degree_hours": trajectory["comfort_violation_dh"].sum(),
         "trajectory": trajectory,
     }
-
-
-def eval_benchmark_closed_loop(
-    controller: Callable[[dict], Tuple[float, dict | None]],
-    *,
-    dataset: BenchmarkDataset | None = None,
-    dataset_dir: str | Path | None = None,
-    setting: BenchmarkSetting = BENCHMARK,
-    scenarios: Sequence[str] | None = None,
-    limit: int | None = None,
-    **kwargs: Any,
-) -> pd.DataFrame:
-    """Run a controller over the agreed benchmark, one row per scenario.
-
-    The open-loop counterpart batches its model calls; this one cannot. Every action depends on
-    the state the previous action produced, so the scenarios are simply run in turn.
-    """
-    if dataset is None:
-        dataset = load_dataset(dataset_dir)
-    if scenarios is None:
-        scenarios = evaluation_scenarios(dataset, setting.split, limit=limit)
-
-    rows = []
-    for scenario_id in scenarios:
-        result = eval_scenario_closed_loop(
-            scenario_id,
-            controller,
-            dataset=dataset,
-            planning_steps=setting.planning_steps,
-            use_forecast=setting.use_forecast,
-            **kwargs,
-        )
-        rows.append(
-            {
-                "scenario_id": scenario_id,
-                "view": setting.view,
-                "use_forecast": setting.use_forecast,
-                "steps": len(result["trajectory"]),
-                "energy_kwh": result["energy_kwh"],
-                "comfort_violation_degree_hours": result["comfort_violation_degree_hours"],
-                "planning_seconds_mean": result["planning_seconds_mean"],
-            }
-        )
-    return pd.DataFrame(rows)

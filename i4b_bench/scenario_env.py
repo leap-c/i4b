@@ -169,6 +169,16 @@ class ScenarioEnv:
         self._step_count = 0
 
     @property
+    def channels(self) -> tuple[str, ...]:
+        """The channels a history row carries, for callers that would otherwise import them."""
+        return self._history_channels
+
+    @property
+    def disturbance_channels(self) -> tuple[str, ...]:
+        """The disturbance channels this view exposes."""
+        return self._disturbance_channels
+
+    @property
     def max_steps(self) -> int:
         """Maximum number of evaluation steps from start to end of scenario."""
         return len(self._env.p) - 1 - self._start_step
@@ -231,7 +241,7 @@ class ScenarioEnv:
         # disturbances that produced it.
         timestamp = self._env.p.index[min(self._env.t, len(self._env.p) - 1)]
         record: dict[str, float] = {
-            "T_room": float(obs[0]),
+            "T_room": float(obs[STATE_CHANNELS.index("T_room")]),
             "T_wall": float(obs[1]),
             "T_hp_ret": float(obs[2]),
             "T_hp_sup_applied": float(info["u"]),

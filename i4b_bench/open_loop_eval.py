@@ -23,46 +23,113 @@ from .control_gain import gain_terms, probe_plans
 #: control response -- the pump was clipped or idle for the whole horizon, so every probe
 #: produced the same trajectory. Reporting a ratio there yields arbitrarily large nonsense.
 MIN_RESPONSE_K = 1e-3
+from dataclasses import dataclass
+
 from .dataset import (
-    BENCHMARK,
     EXCITATION,
     EXCITATION_DTYPE,
     BenchmarkDataset,
-    BenchmarkSetting,
     evaluation_scenarios,
     load_controller_data,
     load_dataset,
 )
-from .observation import TARGET_CHANNELS
+
+#: The channel the metrics are computed on. A predictor may return more; anything else is
+#: ignored, and a predictor that omits this one is an error rather than a silent zero.
+SCORED_CHANNEL = "T_room"
 from .scenario_env import ScenarioEnv
 
 
 class Predictor(Protocol):
     """A batch of observations with their candidate controls, in; predictions out.
 
-    `controls[i]` is `(k_i, horizon)` and `returns[i]` is `(k_i, horizon, n_targets)`, with the
-    targets in `TARGET_CHANNELS` order. A caller with one window and one control passes lists of
-    length one.
+    `controls[i]` is `(k_i, horizon)`, and `returns[i]` maps a channel name to a
+    `(k_i, horizon)` array. Naming the channels rather than returning a positional
+    `(k, horizon, n_targets)` block means a model that predicts one channel and one that
+    predicts five need no different handling, and no caller can get the ordering backwards.
+
+    A caller with one window and one control passes lists of length one.
     """
 
     def __call__(
         self, observations: list[dict], controls: list[np.ndarray]
-    ) -> list[np.ndarray]: ...
+    ) -> list[dict[str, np.ndarray]]: ...
 
 
-def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int, seed: int):
-    """One window per seed, cycling the controllers so every excitation regime is represented.
+@dataclass(frozen=True)
+class OpenLoopBenchmark:
+    """What must not vary between open-loop runs for two results to be comparable.
 
-    The corpus runs the same building under the same weather with different controllers, and it
-    is that matched variation -- identical conditions, different control -- that carries what a
-    control signal does.
+    `split`, `view` and `use_forecast` are deliberately repeated in `ClosedLoopBenchmark`
+    rather than shared through module constants: the two are independent descriptions of a
+    problem, and results are only comparable across them if they happen to agree, which is a
+    thing to check rather than to enforce by construction.
     """
-    rows = dataset.trajectories[dataset.trajectories["scenario_id"] == scenario_id]
-    controllers = sorted(rows["controller_id"].unique())
-    if not controllers:
-        raise ValueError(f"no trajectories for {scenario_id}")
-    rng = np.random.default_rng(seed)
-    return [(controllers[i % len(controllers)], rng) for i in range(seeds)]
+
+    split: str = "test"
+    view: str = "realistic"
+    use_forecast: bool = True
+    horizon: int = 96
+    history_lengths: tuple[int, ...] = (96, 2 * 96, 5 * 96, 21 * 96)
+    seeds: int = 10
+    probes: int = 5
+    probe_amplitude: float = 6.0
+    #: Zero, unlike the closed loop: forecast error is what this measures, so pulling the
+    #: forecast toward the current sensor reading would correct away the thing under test.
+    forecast_correction: float = 0.0
+
+
+OPEN_LOOP = OpenLoopBenchmark()
+
+
+def eval_benchmark_open_loop(
+    predictor: Predictor,
+    *,
+    dataset: BenchmarkDataset | None = None,
+    dataset_dir=None,
+    setting: OpenLoopBenchmark = OPEN_LOOP,
+    scenarios: Sequence[str] | None = None,
+    limit: int | None = None,
+) -> pd.DataFrame:
+    """Score the agreed benchmark: every scenario at every context length in the setting.
+
+    One row per scenario x history_length, with provenance in the columns so a saved CSV says
+    what produced it.
+    """
+    if dataset is None:
+        dataset = load_dataset(dataset_dir)
+    if scenarios is None:
+        scenarios = evaluation_scenarios(dataset, setting.split, limit=limit)
+
+    rows = []
+    for history_length in setting.history_lengths:
+        for scenario_id in scenarios:
+            result = eval_scenario_open_loop(
+                scenario_id,
+                predictor,
+                dataset=dataset,
+                history_length=history_length,
+                planning_steps=setting.horizon,
+                view=setting.view,
+                use_forecast=setting.use_forecast,
+                seeds=setting.seeds,
+                probes=setting.probes,
+                probe_amplitude=setting.probe_amplitude,
+                forecast_correction=setting.forecast_correction,
+            )
+            rows.append(
+                {
+                    "scenario_id": scenario_id,
+                    "history_length": history_length,
+                    "view": setting.view,
+                    "use_forecast": setting.use_forecast,
+                    "windows": len(result["windows"]),
+                    "mae_K": result["mae_K"],
+                    "bias_K": result["bias_K"],
+                    "gain": result["gain"],
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 def eval_scenario_open_loop(
@@ -90,7 +157,6 @@ def eval_scenario_open_loop(
     """
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    target = TARGET_CHANNELS.index("T_room")
 
     observations: list[dict] = []
     controls: list[np.ndarray] = []
@@ -142,7 +208,11 @@ def eval_scenario_open_loop(
     nominal_index = probes // 2
     rows, cross, square = [], 0.0, 0.0
     for info, plans, actual, prediction in zip(meta, controls, realised, predictions):
-        predicted = np.asarray(prediction)[..., target]
+        if SCORED_CHANNEL not in prediction:
+            raise ValueError(
+                f"predictor returned {sorted(prediction)}, without {SCORED_CHANNEL!r}"
+            )
+        predicted = np.asarray(prediction[SCORED_CHANNEL], dtype=float)
         if predicted.shape != actual.shape:
             raise ValueError(f"expected {actual.shape} predictions, got {predicted.shape}")
         error = predicted[nominal_index] - actual[nominal_index]
@@ -176,62 +246,16 @@ def eval_scenario_open_loop(
     }
 
 
-def eval_benchmark_open_loop(
-    predictor: Predictor | Callable[[int], Predictor],
-    *,
-    dataset: BenchmarkDataset | None = None,
-    dataset_dir=None,
-    setting: BenchmarkSetting = BENCHMARK,
-    scenarios: Sequence[str] | None = None,
-    limit: int | None = None,
-) -> pd.DataFrame:
-    """Score the agreed benchmark: every scenario at every context length in the setting.
+def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int, seed: int):
+    """One window per seed, cycling the controllers so every excitation regime is represented.
 
-    One row per scenario x history_length, with provenance in the columns so a saved CSV says
-    what produced it. Pass a `predictor`, or a factory taking `history_length` for models that
-    bake the context length in at construction.
+    The corpus runs the same building under the same weather with different controllers, and it
+    is that matched variation -- identical conditions, different control -- that carries what a
+    control signal does.
     """
-    if dataset is None:
-        dataset = load_dataset(dataset_dir)
-    if scenarios is None:
-        scenarios = evaluation_scenarios(dataset, setting.split, limit=limit)
-
-    rows = []
-    for history_length in setting.history_lengths:
-        model = predictor(history_length) if _is_factory(predictor) else predictor
-        for scenario_id in scenarios:
-            result = eval_scenario_open_loop(
-                scenario_id,
-                model,
-                dataset=dataset,
-                history_length=history_length,
-                planning_steps=setting.planning_steps,
-                view=setting.view,
-                use_forecast=setting.use_forecast,
-                seeds=setting.seeds,
-                probes=setting.probes,
-                forecast_correction=setting.forecast_correction,
-            )
-            rows.append(
-                {
-                    "scenario_id": scenario_id,
-                    "history_length": history_length,
-                    "view": setting.view,
-                    "use_forecast": setting.use_forecast,
-                    "windows": len(result["windows"]),
-                    "mae_K": result["mae_K"],
-                    "bias_K": result["bias_K"],
-                    "gain": result["gain"],
-                }
-            )
-    return pd.DataFrame(rows)
-
-
-def _is_factory(predictor) -> bool:
-    """A factory takes one positional argument; a predictor takes observations and controls."""
-    import inspect
-
-    try:
-        return len(inspect.signature(predictor).parameters) == 1
-    except (TypeError, ValueError):
-        return False
+    rows = dataset.trajectories[dataset.trajectories["scenario_id"] == scenario_id]
+    controllers = sorted(rows["controller_id"].unique())
+    if not controllers:
+        raise ValueError(f"no trajectories for {scenario_id}")
+    rng = np.random.default_rng(seed)
+    return [(controllers[i % len(controllers)], rng) for i in range(seeds)]

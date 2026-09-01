@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 from typing import NamedTuple
@@ -201,23 +200,3 @@ def read_window(
     frame = table.to_pandas().set_index("timestamp_utc").sort_index()
     frame.index = frame.index.tz_convert(None)
     return frame
-
-
-@dataclass(frozen=True)
-class BenchmarkSetting:
-    """What must not vary between runs for two results to be comparable."""
-
-    split: str = "test"
-    view: str = "realistic"
-    use_forecast: bool = True
-    seeds: int = 10
-    planning_steps: int = 96
-    history_lengths: tuple[int, ...] = (96, 2 * 96, 5 * 96, 21 * 96)
-    max_context_days: int = 21
-    #: zero for open loop: forecast error is what is being measured, so it is not corrected away
-    forecast_correction: float = 0.0
-    probe_amplitudes: tuple[float, ...] = (2.0, 6.0)
-    probes: int = 5
-
-
-BENCHMARK = BenchmarkSetting()

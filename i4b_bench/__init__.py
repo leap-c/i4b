@@ -15,14 +15,17 @@ function get comparable numbers without agreeing on anything first.
 This package imports `i4b`; nothing in `i4b` imports it back.
 """
 
-from .closed_loop_eval import eval_benchmark_closed_loop, eval_scenario_closed_loop
+from .closed_loop_eval import (
+    CLOSED_LOOP,
+    ClosedLoopBenchmark,
+    eval_benchmark_closed_loop,
+    eval_scenario_closed_loop,
+)
 from .control_gain import control_gain, gain_terms, probe_plans
 from .dataset import (
-    BENCHMARK,
     EXCITATION,
     EXCITATION_DTYPE,
     BenchmarkDataset,
-    BenchmarkSetting,
     aligned,
     evaluation_scenarios,
     load_controller_data,
@@ -38,11 +41,18 @@ from .observation import (
     ObsView,
     build_observation,
 )
-from .open_loop_eval import Predictor, eval_benchmark_open_loop, eval_scenario_open_loop
+from .open_loop_eval import (
+    OPEN_LOOP,
+    OpenLoopBenchmark,
+    Predictor,
+    eval_benchmark_open_loop,
+    eval_scenario_open_loop,
+)
 from .scenario_env import ScenarioEnv
 
 __all__ = [
-    "BENCHMARK",
+    "CLOSED_LOOP",
+    "OPEN_LOOP",
     "CONTROL_CHANNELS",
     "DISTURBANCE_CHANNELS",
     "EXCITATION",
@@ -50,7 +60,8 @@ __all__ = [
     "STATE_CHANNELS",
     "TARGET_CHANNELS",
     "BenchmarkDataset",
-    "BenchmarkSetting",
+    "ClosedLoopBenchmark",
+    "OpenLoopBenchmark",
     "ObsView",
     "Predictor",
     "ScenarioEnv",
