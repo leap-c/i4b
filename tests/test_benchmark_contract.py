@@ -8,8 +8,6 @@ have caught the crash fixed in 861cf96.
 """
 
 import os
-import subprocess
-import sys
 from pathlib import Path
 
 import numpy as np

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import argparse
-import time
-import numpy as np
 
 # Allow running as `python scripts/profile_step.py` from any CWD.
 import sys
 from pathlib import Path
+
+import numpy as np
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _repo_root_str = str(_REPO_ROOT)

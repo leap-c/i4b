@@ -1,0 +1,29 @@
+# NO single-family house, 1981-1990, refurbishment variant 2.
+# Transmission 1.20 W/m2K -- usual refurbishment.
+
+corpus_id = "NO.N.SFH.04.Gen.ReEx.001.002--period_b"
+split     = "test"
+
+[period]
+start      = 2025-04-01T00:00:00+00:00
+end        = 2026-03-31T23:45:00+00:00
+timestep_s = 900
+
+[building]
+id                 = "NO.N.SFH.04.Gen.ReEx.001.002"
+country            = "NO"
+location           = "no_oslo"
+year_start         = 1981
+year_end           = 1990
+variant            = 2
+transmission_W_m2K = 1.1994
+floor_area_m2      = 123.0
+room_height_m      = 2.50
+mdot_hp            = 0.11030
+
+[task]
+comfort_band_C  = [20.0, 26.0]
+action_limits_C = [5.0, 65.0]
+
+[trajectories]
+recorded = ["mpc-aprbs-high", "mpc-aprbs-low", "mpc-aprbs-medium", "mpc-nominal", "mpc-offset-minus-2K", "mpc-offset-plus-2K", "open-loop-aprbs", "open-loop-aprbs-12K", "open-loop-aprbs-24K", "open-loop-aprbs-3K", "open-loop-aprbs-6K"]

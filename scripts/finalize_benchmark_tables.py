@@ -14,7 +14,6 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
-
 TRANSITION_COLUMNS = [
     "trajectory_id",
     "timestamp_utc",

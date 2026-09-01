@@ -20,18 +20,18 @@ import numpy as np
 import pandas as pd
 import tomllib
 
+from . import scenario
 from .control_gain import gain_terms, probe_plans
 from .dataset import (
     EXCITATION,
     EXCITATION_DTYPE,
     PER_DAY,
     BenchmarkDataset,
-    evaluation_scenarios,
     load_controller_data,
     load_dataset,
-    scenario_metadata,
     timestamp_of,
 )
+from .scenario import Scenario
 from .scenario_env import ScenarioEnv
 
 #: The channel the metrics are computed on. A predictor may return more; anything else is
@@ -127,14 +127,14 @@ def eval_benchmark_open_loop(
     setting = setting or open_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    scenarios = _resolve_scenarios(dataset, setting)
+    scenarios = _resolve_scenarios(setting)
 
     rows = []
     for days in setting.history_days:
         history_length = round(days * PER_DAY)
-        for scenario_id in scenarios:
+        for chosen in scenarios:
             result = eval_scenario_open_loop(
-                scenario_id,
+                chosen.corpus_id,
                 predictor,
                 dataset=dataset,
                 history_length=history_length,
@@ -148,8 +148,7 @@ def eval_benchmark_open_loop(
             )
             rows.append(
                 {
-                    "scenario_id": scenario_id,
-                    **scenario_metadata(dataset, scenario_id),
+                    **chosen.metadata(),
                     "history_days": days,
                     "view": setting.view,
                     "n_scenarios": len(scenarios),
@@ -306,19 +305,17 @@ def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int):
     return [(i, controllers[i % len(controllers)]) for i in range(seeds)]
 
 
-def _resolve_scenarios(dataset, setting) -> list[str]:
-    """The scenarios to run, checking that named ones really belong to the declared split.
+def _resolve_scenarios(setting) -> list[Scenario]:
+    """The scenarios to run, loaded from their files and checked against the declared split.
 
-    With the scenarios named outright, `split` would otherwise be inert -- it is only consulted
-    when they are not. Checking membership instead makes it a guard: pasting a training scenario
-    into a held-out set fails here rather than quietly producing a number nobody can trust.
+    Named scenarios make `split` a guard rather than a selector: pasting a training scenario
+    into a held-out set fails here instead of quietly producing a number nobody can trust.
     """
-    available = evaluation_scenarios(dataset, setting.split)
-    if setting.scenarios is None:
-        return list(available)
-    stray = sorted(set(setting.scenarios) - set(available))
+    names = setting.scenarios if setting.scenarios is not None else scenario.available()
+    chosen = [scenario.load(name) for name in names]
+    stray = sorted(s.name for s in chosen if s.split != setting.split)
     if stray:
         raise ValueError(
             f"{len(stray)} scenario(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
         )
-    return list(setting.scenarios)
+    return chosen

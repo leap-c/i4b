@@ -15,14 +15,14 @@ from typing import Any
 import pandas as pd
 import tomllib
 
+from . import scenario
 from .dataset import (
     PER_DAY,
     BenchmarkDataset,
-    evaluation_scenarios,
     load_dataset,
-    scenario_metadata,
     step_of,
 )
+from .scenario import Scenario
 from .scenario_env import ScenarioEnv
 
 
@@ -102,12 +102,12 @@ def eval_benchmark_closed_loop(
     setting = setting or closed_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    scenarios = _resolve_scenarios(dataset, setting)
+    scenarios = _resolve_scenarios(setting)
 
     rows = []
-    for scenario_id in scenarios:
+    for chosen in scenarios:
         result = eval_scenario_closed_loop(
-            scenario_id,
+            chosen.corpus_id,
             controller,
             dataset=dataset,
             initial_controller_id=setting.initial_controller_id,
@@ -115,13 +115,12 @@ def eval_benchmark_closed_loop(
             initial_context_length=setting.initial_context_length,
             planning_steps=setting.planning_steps,
             n_evaluation_steps=round(setting.evaluation_days * PER_DAY),
-            start_step=step_of(dataset, scenario_id, setting.start),
+            start_step=step_of(dataset, chosen.corpus_id, setting.start),
             use_forecast=setting.use_forecast,
         )
         rows.append(
             {
-                "scenario_id": scenario_id,
-                **scenario_metadata(dataset, scenario_id),
+                **chosen.metadata(),
                 "view": setting.view,
                 "start": setting.start.date().isoformat(),
                 "evaluation_days": setting.evaluation_days,
@@ -218,19 +217,17 @@ def eval_scenario_closed_loop(
     }
 
 
-def _resolve_scenarios(dataset, setting) -> list[str]:
-    """The scenarios to run, checking that named ones really belong to the declared split.
+def _resolve_scenarios(setting) -> list[Scenario]:
+    """The scenarios to run, loaded from their files and checked against the declared split.
 
-    With the scenarios named outright, `split` would otherwise be inert -- it is only consulted
-    when they are not. Checking membership instead makes it a guard: pasting a training scenario
-    into a held-out set fails here rather than quietly producing a number nobody can trust.
+    Named scenarios make `split` a guard rather than a selector: pasting a training scenario
+    into a held-out set fails here instead of quietly producing a number nobody can trust.
     """
-    available = evaluation_scenarios(dataset, setting.split)
-    if setting.scenarios is None:
-        return list(available)
-    stray = sorted(set(setting.scenarios) - set(available))
+    names = setting.scenarios if setting.scenarios is not None else scenario.available()
+    chosen = [scenario.load(name) for name in names]
+    stray = sorted(s.name for s in chosen if s.split != setting.split)
     if stray:
         raise ValueError(
             f"{len(stray)} scenario(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
         )
-    return list(setting.scenarios)
+    return chosen

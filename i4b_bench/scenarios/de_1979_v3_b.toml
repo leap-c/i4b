@@ -1,0 +1,29 @@
+# DE single-family house, 1979-1983, refurbishment variant 3.
+# Transmission 0.39 W/m2K -- advanced refurbishment.
+
+corpus_id = "DE.N.SFH.07.Gen.ReEx.001.003--period_b"
+split     = "test"
+
+[period]
+start      = 2025-04-01T00:00:00+00:00
+end        = 2026-03-31T23:45:00+00:00
+timestep_s = 900
+
+[building]
+id                 = "DE.N.SFH.07.Gen.ReEx.001.003"
+country            = "DE"
+location           = "de_freiburg"
+year_start         = 1979
+year_end           = 1983
+variant            = 3
+transmission_W_m2K = 0.3890
+floor_area_m2      = 215.6
+room_height_m      = 2.50
+mdot_hp            = 0.06655
+
+[task]
+comfort_band_C  = [20.0, 26.0]
+action_limits_C = [5.0, 65.0]
+
+[trajectories]
+recorded = ["mpc-aprbs-high", "mpc-aprbs-low", "mpc-aprbs-medium", "mpc-nominal", "mpc-offset-minus-2K", "mpc-offset-plus-2K", "open-loop-aprbs", "open-loop-aprbs-12K", "open-loop-aprbs-24K", "open-loop-aprbs-3K", "open-loop-aprbs-6K"]

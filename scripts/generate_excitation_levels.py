@@ -33,12 +33,8 @@ import numpy as np
 import pandas as pd
 import pyarrow.dataset as ds
 
-from i4b_bench.corpus import (
-    TRANSITION_COLUMNS,
-    aprbs,
-    load_params,
-    prepare_disturbances,
-    read_reference_weather,
+from i4b_bench.corpus import TRANSITION_COLUMNS, load_params, prepare_disturbances, read_reference_weather
+from i4b_bench_data import aprbs
 )
 from i4b.gym_interface.room_env import RoomHeatEnv
 

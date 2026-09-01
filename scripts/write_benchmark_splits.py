@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from i4b_bench.corpus import make_split_manifests
+from i4b_bench_data import make_split_manifests
 
 
 def main() -> None:

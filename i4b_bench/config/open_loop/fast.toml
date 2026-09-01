@@ -2,7 +2,7 @@
 
 split = "test"
 scenarios = [
-  "BG.N.SFH.02.Gen.ReEx.001.001--period_b",
+  "bg_1919_v1_b",
 ]
 view = "realistic"
 use_forecast = true

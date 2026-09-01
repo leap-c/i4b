@@ -15,9 +15,10 @@ def _():
     from numpy.lib.stride_tricks import sliding_window_view as swv
     from plotly.subplots import make_subplots
 
-    from i4b_bench.corpus import aprbs, prepare_disturbances
+    from i4b_bench.corpus import prepare_disturbances
     from i4b.gym_interface import BUILDING_NAMES2CLASS
     from i4b.gym_interface.room_env import RoomHeatEnv
+from i4b_bench_data import aprbs
 
     return (
         BUILDING_NAMES2CLASS,

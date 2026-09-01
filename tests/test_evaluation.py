@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from i4b_bench import ScenarioEnv, evaluation_scenarios, load_dataset, eval_scenario_closed_loop
+from i4b_bench import ScenarioEnv, eval_scenario_closed_loop, evaluation_scenarios, load_dataset
 
 DATASET = Path(
     os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production")
