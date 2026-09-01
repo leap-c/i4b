@@ -7,12 +7,11 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Tuple
 
 import pandas as pd
-
-from dataclasses import dataclass
 
 from .dataset import BenchmarkDataset, evaluation_scenarios, load_dataset
 from .scenario_env import ScenarioEnv
@@ -53,10 +52,38 @@ def eval_benchmark_closed_loop(
     limit: int | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
-    """Run a controller over the agreed benchmark, one row per scenario.
+    """Score a controller on the closed-loop benchmark.
 
-    The open-loop counterpart batches its model calls; this one cannot. Every action depends on
-    the state the previous action produced, so the scenarios are simply run in turn.
+    Runs the controller on every scenario in the setting and reports what it cost: energy drawn
+    and comfort given up. Where the open-loop benchmark asks whether a model *understands* the
+    building, this asks whether a controller *uses* that understanding well.
+
+    Parameters
+    ----------
+    controller
+        Called with an observation each step, returns `(action_celsius, plan_or_none)`. The
+        observation is the same structure the open-loop side hands a predictor, so a model can
+        serve both without translation.
+    dataset, dataset_dir
+        A loaded corpus, or where to load one from.
+    setting
+        What must not vary between runs. Defaults to `CLOSED_LOOP`. It fixes the things that
+        otherwise hide in a call signature -- the context length, the controller whose recorded
+        trajectory seeds the history, how many steps are evaluated -- because two runs that
+        differ on those are not comparable however similar their numbers look.
+    scenarios, limit
+        Override or shorten the scenario list, as in the open-loop counterpart.
+
+    Returns
+    -------
+    One row per scenario with energy, comfort violation and mean planning time.
+
+    Notes
+    -----
+    Unlike the open-loop benchmark this cannot batch: every action depends on the state the
+    previous one produced, so scenarios run in turn and a slow controller costs real time. The
+    planning time is reported for that reason -- a controller that wins on comfort by thinking
+    for a minute a step has not solved the problem.
     """
     if dataset is None:
         dataset = load_dataset(dataset_dir)
@@ -187,7 +214,6 @@ def eval_scenario_closed_loop(
                 "planning_seconds": planning_seconds,
             }
         )
-
 
         if terminated or truncated:
             break

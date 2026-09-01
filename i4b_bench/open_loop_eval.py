@@ -12,19 +12,13 @@ closed-loop action depends on the state the last one produced.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol, Sequence
+from dataclasses import dataclass
+from typing import Any, Protocol, Sequence
 
 import numpy as np
 import pandas as pd
 
 from .control_gain import gain_terms, probe_plans
-
-#: A window whose probes moved the room less than this in RMS carries no information about
-#: control response -- the pump was clipped or idle for the whole horizon, so every probe
-#: produced the same trajectory. Reporting a ratio there yields arbitrarily large nonsense.
-MIN_RESPONSE_K = 1e-3
-from dataclasses import dataclass
-
 from .dataset import (
     EXCITATION,
     EXCITATION_DTYPE,
@@ -33,11 +27,16 @@ from .dataset import (
     load_controller_data,
     load_dataset,
 )
+from .scenario_env import ScenarioEnv
 
 #: The channel the metrics are computed on. A predictor may return more; anything else is
 #: ignored, and a predictor that omits this one is an error rather than a silent zero.
 SCORED_CHANNEL = "T_room"
-from .scenario_env import ScenarioEnv
+
+#: A window whose probes moved the room less than this in RMS carries no information about
+#: control response -- the pump was clipped or idle for the whole horizon, so every probe
+#: produced the same trajectory. Reporting a ratio there yields arbitrarily large nonsense.
+MIN_RESPONSE_K = 1e-3
 
 
 class Predictor(Protocol):
@@ -91,10 +90,45 @@ def eval_benchmark_open_loop(
     scenarios: Sequence[str] | None = None,
     limit: int | None = None,
 ) -> pd.DataFrame:
-    """Score the agreed benchmark: every scenario at every context length in the setting.
+    """Score a predictor on the open-loop benchmark.
 
-    One row per scenario x history_length, with provenance in the columns so a saved CSV says
-    what produced it.
+    Runs every scenario in the setting at every context length, and reports how well the
+    predictor tracks the building and how faithfully it responds to the control.
+
+    Two questions are asked of each window. *Accuracy* compares the prediction against what the
+    plant did under the control the corpus actually applied. *Control response* perturbs that
+    control, rolls the plant again for each perturbation, and asks whether the predictor's own
+    output moves the same way -- a model can track a room accurately while barely reacting to
+    the heat pump, which makes it useless inside a controller, and only the second measure
+    catches that.
+
+    Parameters
+    ----------
+    predictor
+        Called with a batch of observations and their candidate control trajectories; returns
+        one `{channel: (k, horizon)}` mapping per observation. See `Predictor`.
+    dataset, dataset_dir
+        A loaded corpus, or where to load one from.
+    setting
+        What must not vary between runs for two results to be comparable. Defaults to
+        `OPEN_LOOP`; pass a modified copy to explore, but note that results from different
+        settings are not comparable.
+    scenarios, limit
+        Override or shorten the scenario list. By default the setting's split decides it, and a
+        `limit` takes an evenly spaced subset rather than a prefix -- scenario ids sort by
+        country, so a prefix would be a handful of countries rather than a sample of the corpus.
+
+    Returns
+    -------
+    One row per scenario and context length, carrying `gain`, `mae_K` and `bias_K` alongside
+    the view and forecast source that produced them, so a saved table says what it measured.
+
+    Notes
+    -----
+    Gain is pooled within a scenario rather than averaged over its windows: a window where the
+    control barely moved the building contributes little to both sums instead of a loud and
+    meaningless ratio. Windows whose probes moved the room less than a millikelvin are reported
+    as `NaN` and counted separately.
     """
     if dataset is None:
         dataset = load_dataset(dataset_dir)
