@@ -1,5 +1,0 @@
-{
-  "description": "One scenario, one day. For CI and for checking a controller runs at all.",
-  "n_scenarios": 1,
-  "evaluation_steps": 96
-}

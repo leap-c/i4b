@@ -5,16 +5,24 @@ See docs/EVAL_SPEC.md for the full specification.
 
 from __future__ import annotations
 
-import json
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import tomllib
 
-from .dataset import BenchmarkDataset, evaluation_scenarios, load_dataset
+from .dataset import (
+    PER_DAY,
+    BenchmarkDataset,
+    evaluation_scenarios,
+    load_dataset,
+    scenario_metadata,
+    step_of,
+)
 from .scenario_env import ScenarioEnv
 
 
@@ -27,39 +35,39 @@ class ClosedLoopBenchmark:
     or the controller their history was seeded from.
     """
 
-    split: str = "test"
-    #: How many scenarios of the split to run, evenly spaced; None runs all of them. Part of
-    #: the setting because a ten-scenario run and a thirty-scenario run are not comparable, so
-    #: the thing that records what was run has to know. Ten is a night's run for a controller
-    #: that plans in ~2 s a step, or under an hour if the scenarios are distributed.
-    n_scenarios: int | None = 10
-    view: str = "realistic"
-    use_forecast: bool = True
-    planning_steps: int = 96
+    split: str
+    #: The scenarios to run, named outright; None runs the whole split. Named rather than
+    #: counted so that adding buildings to the corpus cannot silently change which problems a
+    #: benchmark covers. Generate a set with `python -m i4b_bench.select_scenarios`.
+    scenarios: tuple[str, ...] | None
+    view: str
+    use_forecast: bool
+    planning_steps: int
     #: Generous on purpose. The buffer costs only memory, and a context shorter than a method
     #: wants silently penalises it -- a foundation model asking for three weeks got one day.
-    max_context_length: int = 21 * 96
-    initial_context_length: int | None = None
+    max_context_length: int
+    initial_context_length: int | None
     #: Excited rather than nominal: the handed-over history then contains control variation the
     #: room actually responded to, which is what makes the dynamics identifiable from it at all.
     #: It is also less of a head start for controllers that happen to resemble the MPC that
     #: produced the state. Deliberately one of the original controllers -- the open-loop
     #: excitation levels carry a weather inconsistency that would propagate into every run.
-    initial_controller_id: str = "mpc-aprbs-high"
-    #: Two weeks. Weather dominates the level of these metrics -- a colder week costs 5x the
-    #: comfort violation of a mild one -- so a short window measures the week as much as the
-    #: controller. Comparisons stay paired (same scenario, same window) so weather cancels in
-    #: differences, but absolute numbers are only meaningful alongside the window they came from.
-    evaluation_steps: int | None = 14 * 96
+    initial_controller_id: str
+    #: When the run begins, as a date. It matters as much as the duration -- a fortnight in May
+    #: and one in January are different problems -- and a date says which, where a step index
+    #: says nothing and quietly means something else if a period ever shifts.
+    start: datetime
+    #: How long it runs, in days. Weather dominates the level of these metrics, a colder week
+    #: costing several times the comfort violation of a mild one, so a short window measures the
+    #: week as much as the controller. Comparisons stay paired -- same scenario, same window --
+    #: so weather cancels in differences, but absolutes mean little without the dates beside them.
+    evaluation_days: float
     #: A controller would correct an archived forecast against its own sensor, so unlike the
     #: open loop this is not zero.
-    forecast_correction: float = 0.5
+    forecast_correction: float
 
 
-CLOSED_LOOP = ClosedLoopBenchmark()
-
-
-#: Named settings live as readable JSON beside the code, one file per set, so a configuration is
+#: Named settings live as readable TOML beside the code, one file per set, so a configuration is
 #: a thing to send someone, diff against theirs, and cite. They are in the package rather than in
 #: the dataset directory because they define what the benchmark *measures*, which is a decision
 #: that belongs under version control -- the dataset directory is not.
@@ -68,14 +76,13 @@ CONFIG = Path(__file__).parent / "config" / "closed_loop"
 
 def closed_loop_setting(name: str = "benchmark") -> ClosedLoopBenchmark:
     """Load a named setting, e.g. `fast`, `benchmark`, `full`."""
-    path = CONFIG / f"{name}.json"
+    path = CONFIG / f"{name}.toml"
     if not path.exists():
-        have = sorted(p.stem for p in CONFIG.glob("*.json"))
+        have = sorted(p.stem for p in CONFIG.glob("*.toml"))
         raise KeyError(f"unknown setting {name!r}, have {have}")
-    body = json.loads(path.read_text())
-    body.pop("description", None)
+    body = tomllib.loads(path.read_text())
     body = {k: tuple(v) if isinstance(v, list) else v for k, v in body.items()}
-    return replace(CLOSED_LOOP, **body)
+    return ClosedLoopBenchmark(**body)
 
 
 def eval_benchmark_closed_loop(
@@ -83,7 +90,7 @@ def eval_benchmark_closed_loop(
     *,
     dataset: BenchmarkDataset | None = None,
     dataset_dir: str | Path | None = None,
-    setting: ClosedLoopBenchmark = CLOSED_LOOP,
+    setting: ClosedLoopBenchmark | None = None,
 ) -> pd.DataFrame:
     """Score a controller on the closed-loop benchmark.
 
@@ -92,9 +99,10 @@ def eval_benchmark_closed_loop(
     the last one produced -- so planning time is reported too, because a controller that wins on
     comfort by thinking for a minute a step has not solved the problem.
     """
+    setting = setting or closed_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    scenarios = evaluation_scenarios(dataset, setting.split, limit=setting.n_scenarios)
+    scenarios = _resolve_scenarios(dataset, setting)
 
     rows = []
     for scenario_id in scenarios:
@@ -106,13 +114,17 @@ def eval_benchmark_closed_loop(
             max_context_length=setting.max_context_length,
             initial_context_length=setting.initial_context_length,
             planning_steps=setting.planning_steps,
-            n_evaluation_steps=setting.evaluation_steps,
+            n_evaluation_steps=round(setting.evaluation_days * PER_DAY),
+            start_step=step_of(dataset, scenario_id, setting.start),
             use_forecast=setting.use_forecast,
         )
         rows.append(
             {
                 "scenario_id": scenario_id,
+                **scenario_metadata(dataset, scenario_id),
                 "view": setting.view,
+                "start": setting.start.date().isoformat(),
+                "evaluation_days": setting.evaluation_days,
                 "n_scenarios": len(scenarios),
                 "use_forecast": setting.use_forecast,
                 "steps": len(result["trajectory"]),
@@ -204,3 +216,21 @@ def eval_scenario_closed_loop(
         "comfort_violation_degree_hours": trajectory["comfort_violation_dh"].sum(),
         "trajectory": trajectory,
     }
+
+
+def _resolve_scenarios(dataset, setting) -> list[str]:
+    """The scenarios to run, checking that named ones really belong to the declared split.
+
+    With the scenarios named outright, `split` would otherwise be inert -- it is only consulted
+    when they are not. Checking membership instead makes it a guard: pasting a training scenario
+    into a held-out set fails here rather than quietly producing a number nobody can trust.
+    """
+    available = evaluation_scenarios(dataset, setting.split)
+    if setting.scenarios is None:
+        return list(available)
+    stray = sorted(set(setting.scenarios) - set(available))
+    if stray:
+        raise ValueError(
+            f"{len(stray)} scenario(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
+        )
+    return list(setting.scenarios)

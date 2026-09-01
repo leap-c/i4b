@@ -1,0 +1,45 @@
+# Every scenario, from the end of the seeded context to the end of the year. Weeks of compute
+# for a planning controller, so this is for a final number, not for iterating.
+
+split = "test"
+scenarios = [
+  "BG.N.SFH.02.Gen.ReEx.001.001--period_b",
+  "BG.N.SFH.02.Gen.ReEx.001.002--period_b",
+  "BG.N.SFH.02.Gen.ReEx.001.003--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.003--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.002--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.003--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.002--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.003--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.003--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.002--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.003--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.001--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.002--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.003--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.001--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.002--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.003--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.002--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.003--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.003--period_b",
+]
+view = "realistic"
+use_forecast = true
+planning_steps = 96
+max_context_length = 2016
+initial_context_length = 2016
+initial_controller_id = "mpc-aprbs-high"
+start = 2025-04-22T00:00:00Z
+evaluation_days = 343.0
+forecast_correction = 0.5

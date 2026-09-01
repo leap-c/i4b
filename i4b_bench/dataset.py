@@ -49,7 +49,7 @@ EXCITATION_DTYPE = pd.CategoricalDtype(
 )
 
 
-_DEFAULT_DIR = Path(__file__).resolve().parents[2] / "production"
+_DEFAULT_DIR = Path(__file__).resolve().parents[1] / "production"
 
 _RAW_COLUMN_RENAMES = {
     "ghi_W_m2": "ghi",
@@ -203,3 +203,59 @@ def read_window(
     frame = table.to_pandas().set_index("timestamp_utc").sort_index()
     frame.index = frame.index.tz_convert(None)
     return frame
+
+
+def step_of(dataset, scenario_id: str, when) -> int:
+    """The step index of a timestamp within a scenario, so configuration can speak in dates.
+
+    A step index depends on where a period happens to start; a date does not, and a reader can
+    tell at a glance whether a run lands in the heating season.
+    """
+    row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
+    if row.empty:
+        raise KeyError(f"unknown scenario {scenario_id!r}")
+    start = pd.Timestamp(row.iloc[0]["start_time_utc"])
+    when = pd.Timestamp(when)
+    if when.tzinfo is None:
+        when = when.tz_localize("UTC")
+    step = int((when - start) / STEP)
+    if step < 0:
+        raise ValueError(f"{when.date()} is before {scenario_id} begins ({start.date()})")
+    return step
+
+
+def timestamp_of(dataset, scenario_id: str, step: int) -> pd.Timestamp:
+    """The timestamp of a step within a scenario -- the inverse of `step_of`."""
+    row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
+    if row.empty:
+        raise KeyError(f"unknown scenario {scenario_id!r}")
+    return pd.Timestamp(row.iloc[0]["start_time_utc"]) + step * STEP
+
+
+def scenario_metadata(dataset, scenario_id: str) -> dict:
+    """What a scenario *is*, so a result row can be read without joining back to the corpus.
+
+    A scenario is one building, in one refurbishment state, under one year of weather. Carrying
+    that alongside the metrics is what lets results be grouped by country, construction era or
+    insulation level without anyone reloading the building table.
+    """
+    row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
+    if row.empty:
+        raise KeyError(f"unknown scenario {scenario_id!r}")
+    row = row.iloc[0]
+    building = dataset.buildings[dataset.buildings["building_id"] == row["building_id"]]
+    if building.empty:
+        raise KeyError(f"scenario {scenario_id!r} names an unknown building")
+    building = building.iloc[0]
+    return {
+        "building_id": row["building_id"],
+        "country": row["country_code"],
+        "period_id": row["period_id"],
+        # the refurbishment variant, and the transmission it implies: the same house
+        # unrenovated and fully renovated are very different control problems
+        "variant": int(building["variant_number"]),
+        "transmission_W_m2K": float(building["transmission_W_m2K"]),
+        "year_start": int(building["year_start"]),
+        "year_end": int(building["year_end"]),
+        "floor_area_m2": float(building["area_floor"]),
+    }

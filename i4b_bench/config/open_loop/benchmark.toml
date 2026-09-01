@@ -1,0 +1,50 @@
+# The agreed open-loop set.
+#
+# Samples widely because open-loop windows are cheap: the plant rollouts behind 600 windows cost
+# about as much wall-clock as the closed-loop set does when its scenarios are distributed, and
+# more windows is the only thing that puts error bars on small differences between methods.
+#
+# `seeds` is a count, not a random seed. Windows are placed evenly through each trajectory, so
+# the set covers the seasons by construction and reproduces without any random state.
+
+split = "test"
+scenarios = [
+  "BG.N.SFH.02.Gen.ReEx.001.001--period_b",
+  "BG.N.SFH.02.Gen.ReEx.001.002--period_b",
+  "BG.N.SFH.02.Gen.ReEx.001.003--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.003--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.002--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.003--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.002--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.003--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.003--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.002--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.003--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.001--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.002--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.003--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.001--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.002--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.003--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.002--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.003--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.002--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.003--period_b",
+]
+view = "realistic"
+use_forecast = true
+horizon_hours = 24.0
+history_days = [1, 2, 5, 21]
+seeds = 20
+probes = 5
+probe_amplitude = 6.0
+forecast_correction = 0.0

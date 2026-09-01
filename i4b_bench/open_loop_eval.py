@@ -12,22 +12,25 @@ closed-loop action depends on the state the last one produced.
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
+import tomllib
 
 from .control_gain import gain_terms, probe_plans
 from .dataset import (
     EXCITATION,
     EXCITATION_DTYPE,
+    PER_DAY,
     BenchmarkDataset,
     evaluation_scenarios,
     load_controller_data,
     load_dataset,
+    scenario_metadata,
+    timestamp_of,
 )
 from .scenario_env import ScenarioEnv
 
@@ -67,27 +70,26 @@ class OpenLoopBenchmark:
     thing to check rather than to enforce by construction.
     """
 
-    split: str = "test"
-    #: How many scenarios of the split to run, evenly spaced; None runs all of them. Part of
-    #: the setting because a ten-scenario run and a thirty-scenario run are not comparable, so
-    #: the thing that records what was run has to know.
-    n_scenarios: int | None = None
-    view: str = "realistic"
-    use_forecast: bool = True
-    horizon: int = 96
-    history_lengths: tuple[int, ...] = (96, 2 * 96, 5 * 96, 21 * 96)
-    seeds: int = 10
-    probes: int = 5
-    probe_amplitude: float = 6.0
+    split: str
+    #: The scenarios to run, named outright; None runs the whole split. Named rather than
+    #: counted so that adding buildings to the corpus cannot silently change which problems a
+    #: benchmark covers. Generate a set with `python -m i4b_bench.select_scenarios`.
+    scenarios: tuple[str, ...] | None
+    view: str
+    use_forecast: bool
+    #: How far ahead a prediction runs, in hours.
+    horizon_hours: float
+    #: The context lengths to sweep, in days.
+    history_days: tuple[float, ...]
+    seeds: int
+    probes: int
+    probe_amplitude: float
     #: Zero, unlike the closed loop: forecast error is what this measures, so pulling the
     #: forecast toward the current sensor reading would correct away the thing under test.
-    forecast_correction: float = 0.0
+    forecast_correction: float
 
 
-OPEN_LOOP = OpenLoopBenchmark()
-
-
-#: Named settings live as readable JSON beside the code, one file per set, so a configuration is
+#: Named settings live as readable TOML beside the code, one file per set, so a configuration is
 #: a thing to send someone, diff against theirs, and cite. They are in the package rather than in
 #: the dataset directory because they define what the benchmark *measures*, which is a decision
 #: that belongs under version control -- the dataset directory is not.
@@ -96,14 +98,13 @@ CONFIG = Path(__file__).parent / "config" / "open_loop"
 
 def open_loop_setting(name: str = "benchmark") -> OpenLoopBenchmark:
     """Load a named setting, e.g. `fast`, `benchmark`, `full`."""
-    path = CONFIG / f"{name}.json"
+    path = CONFIG / f"{name}.toml"
     if not path.exists():
-        have = sorted(p.stem for p in CONFIG.glob("*.json"))
+        have = sorted(p.stem for p in CONFIG.glob("*.toml"))
         raise KeyError(f"unknown setting {name!r}, have {have}")
-    body = json.loads(path.read_text())
-    body.pop("description", None)
+    body = tomllib.loads(path.read_text())
     body = {k: tuple(v) if isinstance(v, list) else v for k, v in body.items()}
-    return replace(OPEN_LOOP, **body)
+    return OpenLoopBenchmark(**body)
 
 
 def eval_benchmark_open_loop(
@@ -111,7 +112,7 @@ def eval_benchmark_open_loop(
     *,
     dataset: BenchmarkDataset | None = None,
     dataset_dir=None,
-    setting: OpenLoopBenchmark = OPEN_LOOP,
+    setting: OpenLoopBenchmark | None = None,
 ) -> pd.DataFrame:
     """Score a predictor on the open-loop benchmark.
 
@@ -123,19 +124,21 @@ def eval_benchmark_open_loop(
     than averaged over its windows, so a window where the control barely moved contributes
     little instead of a loud ratio; those windows report NaN and are counted separately.
     """
+    setting = setting or open_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    scenarios = evaluation_scenarios(dataset, setting.split, limit=setting.n_scenarios)
+    scenarios = _resolve_scenarios(dataset, setting)
 
     rows = []
-    for history_length in setting.history_lengths:
+    for days in setting.history_days:
+        history_length = round(days * PER_DAY)
         for scenario_id in scenarios:
             result = eval_scenario_open_loop(
                 scenario_id,
                 predictor,
                 dataset=dataset,
                 history_length=history_length,
-                planning_steps=setting.horizon,
+                planning_steps=round(setting.horizon_hours * 4),
                 view=setting.view,
                 use_forecast=setting.use_forecast,
                 seeds=setting.seeds,
@@ -146,7 +149,8 @@ def eval_benchmark_open_loop(
             rows.append(
                 {
                     "scenario_id": scenario_id,
-                    "history_length": history_length,
+                    **scenario_metadata(dataset, scenario_id),
+                    "history_days": days,
                     "view": setting.view,
                     "n_scenarios": len(scenarios),
                     "use_forecast": setting.use_forecast,
@@ -174,7 +178,6 @@ def eval_scenario_open_loop(
     probes: int = 5,
     probe_kind: str = "offset",
     forecast_correction: float = 0.0,
-    seed: int = 0,
 ) -> dict[str, Any]:
     """Score one scenario: point accuracy on the recorded control, and control response.
 
@@ -190,13 +193,16 @@ def eval_scenario_open_loop(
     realised: list[np.ndarray] = []
     meta: list[dict] = []
 
-    for controller_id, rng in _windows(dataset, scenario_id, seeds, seed):
+    for index, controller_id in _windows(dataset, scenario_id, seeds):
         trajectory = load_controller_data(dataset, controller_id, scenario_id)
         first = history_length
         last = len(trajectory) - planning_steps - 1
         if last <= first:
             continue
-        start = int(rng.integers(first, last))
+        # Evenly spaced through the year rather than sampled: weather dominates these metrics,
+        # so coverage of the seasons matters more than randomness, and it needs no seed to
+        # reproduce. `index` is the window's position in the requested set.
+        start = first + round((last - first) * (index + 0.5) / seeds)
 
         env = ScenarioEnv(
             scenario_id,
@@ -211,7 +217,9 @@ def eval_scenario_open_loop(
         )
         observation, _ = env.reset()
         nominal = trajectory["T_hp_sup_applied"].to_numpy(float)[start : start + planning_steps]
-        plans = probe_plans(rng, nominal, probe_amplitude, probes, probe_kind)
+        plans = probe_plans(
+            np.random.default_rng(index), nominal, probe_amplitude, probes, probe_kind
+        )
 
         rolled = np.empty((len(plans), planning_steps), dtype=float)
         for k, plan in enumerate(plans):
@@ -223,7 +231,18 @@ def eval_scenario_open_loop(
         observations.append(observation)
         controls.append(plans)
         realised.append(rolled)
-        meta.append({"controller_id": controller_id, "start_step": start})
+        # A window names itself: trajectory (building, weather year, and the controller whose
+        # history is handed over) plus where in that trajectory it starts. The context *length*
+        # stays a separate column -- the same window scored at 96 and at 2016 steps is one
+        # window under two conditions, not two windows.
+        anchor = timestamp_of(dataset, scenario_id, start)
+        meta.append(
+            {
+                "window_id": f"{scenario_id}--{controller_id}@{anchor:%Y-%m-%d}",
+                "controller_id": controller_id,
+                "start_step": start,
+            }
+        )
 
     if not observations:
         raise ValueError(f"no usable windows for {scenario_id} at history_length={history_length}")
@@ -273,7 +292,7 @@ def eval_scenario_open_loop(
     }
 
 
-def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int, seed: int):
+def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int):
     """One window per seed, cycling the controllers so every excitation regime is represented.
 
     The corpus runs the same building under the same weather with different controllers, and it
@@ -284,5 +303,22 @@ def _windows(dataset: BenchmarkDataset, scenario_id: str, seeds: int, seed: int)
     controllers = sorted(rows["controller_id"].unique())
     if not controllers:
         raise ValueError(f"no trajectories for {scenario_id}")
-    rng = np.random.default_rng(seed)
-    return [(controllers[i % len(controllers)], rng) for i in range(seeds)]
+    return [(i, controllers[i % len(controllers)]) for i in range(seeds)]
+
+
+def _resolve_scenarios(dataset, setting) -> list[str]:
+    """The scenarios to run, checking that named ones really belong to the declared split.
+
+    With the scenarios named outright, `split` would otherwise be inert -- it is only consulted
+    when they are not. Checking membership instead makes it a guard: pasting a training scenario
+    into a held-out set fails here rather than quietly producing a number nobody can trust.
+    """
+    available = evaluation_scenarios(dataset, setting.split)
+    if setting.scenarios is None:
+        return list(available)
+    stray = sorted(set(setting.scenarios) - set(available))
+    if stray:
+        raise ValueError(
+            f"{len(stray)} scenario(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
+        )
+    return list(setting.scenarios)

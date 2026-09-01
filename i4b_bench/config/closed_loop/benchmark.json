@@ -1,5 +1,0 @@
-{
-  "description": "Ten scenarios over two weeks: a night's run for a controller that plans in ~2 s a step, under an hour if the scenarios are distributed. Weather dominates the level of these metrics, so compare controllers on the same set rather than reading the absolutes.",
-  "n_scenarios": 10,
-  "evaluation_steps": 1344
-}

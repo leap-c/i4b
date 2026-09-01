@@ -1,0 +1,15 @@
+# One scenario, one winter day. For CI, and for checking a controller runs at all.
+
+split = "test"
+scenarios = [
+  "BG.N.SFH.02.Gen.ReEx.001.001--period_b",
+]
+view = "realistic"
+use_forecast = true
+planning_steps = 96
+max_context_length = 2016
+initial_context_length = 2016
+initial_controller_id = "mpc-aprbs-high"
+start = 2026-01-08T00:00:00Z
+evaluation_days = 1.0
+forecast_correction = 0.5

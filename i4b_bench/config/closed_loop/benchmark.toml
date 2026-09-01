@@ -1,0 +1,33 @@
+# The agreed closed-loop set.
+#
+# Ten scenarios over a fortnight in January: a night's run for a controller that plans in ~2 s a
+# step, or under an hour distributed, since scenarios are independent.
+#
+# `start` matters as much as the duration. Following straight on from the seeded context would
+# put every run in late April, when a heat pump has least to do and controllers differ least;
+# January puts them in the heating season. Weather still dominates the level of these numbers --
+# a cold week costs several times the comfort violation of a mild one -- so compare controllers
+# on the same set rather than reading the absolutes.
+
+split = "test"
+scenarios = [
+  "BG.N.SFH.02.Gen.ReEx.001.001--period_b",
+  "CY.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.05.Gen.ReEx.001.001--period_b",
+  "DE.N.SFH.07.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.03.Gen.ReEx.001.001--period_b",
+  "FR.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "IE.N.SFH.08.Gen.ReEx.001.001--period_b",
+  "IE.N.SFH.09.Tframe.ReEx.001.001--period_b",
+  "NO.N.SFH.04.Gen.ReEx.001.001--period_b",
+  "PL.N.SFH.03.Gen.ReEx.001.001--period_b",
+]
+view = "realistic"
+use_forecast = true
+planning_steps = 96
+max_context_length = 2016
+initial_context_length = 2016
+initial_controller_id = "mpc-aprbs-high"
+start = 2026-01-08T00:00:00Z
+evaluation_days = 14.0
+forecast_correction = 0.5
