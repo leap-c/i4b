@@ -62,6 +62,8 @@ class ScenarioEnv:
         start_step: int | None = None,
         use_forecast: bool = False,
         view: ObsView = "perfect",
+        build_observation: bool = True,
+        forecast_correction: float = 0.5,
     ):
         if dataset is None:
             dataset = load_dataset(dataset_dir)
@@ -108,9 +110,17 @@ class ScenarioEnv:
             backend="legacy",
         )
 
-        # Load initial controller trajectory for history seeding
-        self._initial_trajectory = load_controller_data(
-            dataset, initial_controller_id, scenario_id
+        # Observations cost a dict of arrays per step. Generation discards them, and over
+        # 35,039 steps x 1,528 trajectories that is the difference between minutes and hours.
+        self._build_observations = build_observation
+
+        # The recorded trajectory seeds the history buffer -- and it is the *only* thing here
+        # that needs one, so `initial_controller_id=None` lets this environment generate the
+        # trajectories a corpus is made of rather than only replay them.
+        self._initial_trajectory = (
+            None
+            if initial_controller_id is None
+            else load_controller_data(dataset, initial_controller_id, scenario_id)
         )
 
         # Forecast provider
@@ -122,6 +132,7 @@ class ScenarioEnv:
             forecasts=dataset.forecasts,
             location_id=scenario_row.get("location_id"),
             cache_key=(str(scenario_row.get("location_id")), str(building_id)),
+            correction_fraction=forecast_correction,
         )
 
         # Configuration
@@ -136,13 +147,17 @@ class ScenarioEnv:
             )
         self._planning_steps = planning_steps
 
+        if self._initial_trajectory is None:
+            self._initial_context_length = 0
         self._start_step = start_step if start_step is not None else self._initial_context_length
         if self._start_step < self._initial_context_length:
             raise ValueError(
                 f"start_step ({self._start_step}) must be >= "
                 f"initial_context_length ({self._initial_context_length})"
             )
-        if self._start_step > len(self._initial_trajectory):
+        if self._initial_trajectory is not None and self._start_step > len(
+            self._initial_trajectory
+        ):
             raise ValueError(
                 f"start_step ({self._start_step}) exceeds available trajectory "
                 f"length ({len(self._initial_trajectory)})"
@@ -170,23 +185,28 @@ class ScenarioEnv:
         self._env.reset()
         self._env.t = self._start_step
 
-        # Set the building state from the recorded trajectory at start_step
-        state_at_start = {
-            ch: float(traj.iloc[self._start_step][ch]) for ch in STATE_CHANNELS
-        }
-        self._env.state = self._env._build_observation(state_at_start)
+        if traj is not None:
+            # Set the building state from the recorded trajectory at start_step
+            state_at_start = {
+                ch: float(traj.iloc[self._start_step][ch]) for ch in STATE_CHANNELS
+            }
+            self._env.state = self._env._build_observation(state_at_start)
 
         # Seed the history buffer from the recorded trajectory
         # One extra row: pairing each state with the previous row's inputs consumes one.
         history_start = max(0, self._start_step - self._initial_context_length)
-        history_slice = traj.iloc[history_start : self._start_step + 1]
+        history_slice = (
+            traj.iloc[history_start : self._start_step + 1]
+            if traj is not None
+            else traj  # no recorded past to seed from; the buffer fills as the episode runs
+        )
 
         # Recorded rows are state_t + input_t; a history row is the state together with
         # the input that produced it, so the inputs move one step forward with the state.
         self._history_buffer = []
         self._timestamps = []
         input_channels = [ch for ch in self._history_channels if ch not in STATE_CHANNELS]
-        rows = list(history_slice.itertuples(index=False))
+        rows = [] if history_slice is None else list(history_slice.itertuples(index=False))
         for previous, row in zip(rows, rows[1:]):
             record = {ch: float(getattr(row, ch)) for ch in STATE_CHANNELS}
             record.update({ch: float(getattr(previous, ch)) for ch in input_channels})
@@ -235,7 +255,9 @@ class ScenarioEnv:
         return self._build_observation(), reward, terminated, truncated, info
 
     def _build_observation(self) -> dict:
-        """Construct the nested observation dict."""
+        """Construct the nested observation dict, unless the caller opted out of the cost."""
+        if not self._build_observations:
+            return {}
         # Current state
         state_vals = self._env.state[: len(STATE_CHANNELS)]
         state = {ch: float(state_vals[i]) for i, ch in enumerate(STATE_CHANNELS)}

@@ -44,10 +44,15 @@ class ForecastProvider:
         forecasts: pd.DataFrame | None = None,
         location_id: str | None = None,
         cache_key: tuple[str, str] | None = None,
+        correction_fraction: float = 0.5,
     ):
         self._exogenous = exogenous
         self._disturbance_channels = disturbance_channels
         self._use_forecast = use_forecast
+        # How far an archived run is nudged toward the current measurement. Realistic for a
+        # controller correcting against its own sensor, but it makes the "forecast" partly
+        # observational, so a study of forecast error proper sets this to zero.
+        self._correction_fraction = correction_fraction
         self._runs: dict[pd.Timestamp, pd.DataFrame] | None = None
 
         if use_forecast:
@@ -88,6 +93,7 @@ class ForecastProvider:
                 planning_steps,
                 current_disturbance,
                 channels=self._disturbance_channels,
+                correction_fraction=self._correction_fraction,
             )
             # raw[0] is decision_time (current), raw[1:] is the forecast
             values = raw[1 : planning_steps + 1]

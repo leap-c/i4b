@@ -18,6 +18,11 @@ import numpy as np
 import pandas as pd
 
 from .control_gain import gain_terms, probe_plans
+
+#: A window whose probes moved the room less than this in RMS carries no information about
+#: control response -- the pump was clipped or idle for the whole horizon, so every probe
+#: produced the same trajectory. Reporting a ratio there yields arbitrarily large nonsense.
+MIN_RESPONSE_K = 1e-3
 from .dataset import (
     BENCHMARK,
     EXCITATION,
@@ -74,6 +79,7 @@ def eval_scenario_open_loop(
     probe_amplitude: float = 6.0,
     probes: int = 5,
     probe_kind: str = "offset",
+    forecast_correction: float = 0.0,
     seed: int = 0,
 ) -> dict[str, Any]:
     """Score one scenario: point accuracy on the recorded control, and control response.
@@ -108,6 +114,7 @@ def eval_scenario_open_loop(
             start_step=start,
             use_forecast=use_forecast,
             view=view,
+            forecast_correction=forecast_correction,
         )
         observation, _ = env.reset()
         nominal = trajectory["T_hp_sup_applied"].to_numpy(float)[start : start + planning_steps]
@@ -142,13 +149,16 @@ def eval_scenario_open_loop(
         window_cross, window_square = gain_terms(actual, predicted)
         cross += window_cross
         square += window_square
+        response_rms = float(np.sqrt(window_square / actual.size))
+        informative = response_rms >= MIN_RESPONSE_K
         rows.append(
             {
                 **info,
                 "excitation": EXCITATION.get(info["controller_id"]),
                 "mae_K": float(np.abs(error).mean()),
                 "bias_K": float(error.mean()),
-                "gain": window_cross / window_square if window_square > 0 else float("nan"),
+                "response_K": response_rms,
+                "gain": window_cross / window_square if informative else float("nan"),
             }
         )
 
@@ -156,6 +166,7 @@ def eval_scenario_open_loop(
     frame["excitation"] = frame["excitation"].astype(EXCITATION_DTYPE)
     return {
         "scenario_id": scenario_id,
+        "informative_windows": int(frame["gain"].notna().sum()),
         "mae_K": float(frame["mae_K"].mean()),
         "bias_K": float(frame["bias_K"].mean()),
         # one pooled slope, not a mean of per-window slopes: a window the control barely moved
@@ -199,6 +210,7 @@ def eval_benchmark_open_loop(
                 use_forecast=setting.use_forecast,
                 seeds=setting.seeds,
                 probes=setting.probes,
+                forecast_correction=setting.forecast_correction,
             )
             rows.append(
                 {

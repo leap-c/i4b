@@ -214,6 +214,8 @@ class BenchmarkSetting:
     planning_steps: int = 96
     history_lengths: tuple[int, ...] = (96, 2 * 96, 5 * 96, 21 * 96)
     max_context_days: int = 21
+    #: zero for open loop: forecast error is what is being measured, so it is not corrected away
+    forecast_correction: float = 0.0
     probe_amplitudes: tuple[float, ...] = (2.0, 6.0)
     probes: int = 5
 
