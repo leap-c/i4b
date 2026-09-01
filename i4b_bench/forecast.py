@@ -57,9 +57,7 @@ class ForecastProvider:
 
         if use_forecast:
             if forecasts is None or location_id is None:
-                raise ValueError(
-                    "forecasts and location_id are required when use_forecast=True"
-                )
+                raise ValueError("forecasts and location_id are required when use_forecast=True")
             location_forecasts = forecasts[forecasts["location_id"] == location_id]
             if cache_key is None:
                 # never key on id(): a fresh params dict each call would miss every time
@@ -82,9 +80,7 @@ class ForecastProvider:
         """
         delta_t = 900
         future_start = decision_time + pd.Timedelta(seconds=delta_t)
-        timestamps = pd.date_range(
-            future_start, periods=planning_steps, freq=f"{delta_t}s"
-        )
+        timestamps = pd.date_range(future_start, periods=planning_steps, freq=f"{delta_t}s")
 
         if self._use_forecast and self._runs is not None:
             raw = select_forecast_disturbances(
@@ -99,9 +95,7 @@ class ForecastProvider:
             values = raw[1 : planning_steps + 1]
         else:
             slice_ = self._exogenous.reindex(timestamps)
-            values = slice_[list(self._disturbance_channels)].to_numpy(
-                dtype=np.float32
-            )
+            values = slice_[list(self._disturbance_channels)].to_numpy(dtype=np.float32)
 
         ts = timestamps.values.astype("datetime64[s]")
         return ts, values

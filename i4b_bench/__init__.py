@@ -18,6 +18,7 @@ This package imports `i4b`; nothing in `i4b` imports it back.
 from .closed_loop_eval import (
     CLOSED_LOOP,
     ClosedLoopBenchmark,
+    closed_loop_setting,
     eval_benchmark_closed_loop,
     eval_scenario_closed_loop,
 )
@@ -47,6 +48,7 @@ from .open_loop_eval import (
     Predictor,
     eval_benchmark_open_loop,
     eval_scenario_open_loop,
+    open_loop_setting,
 )
 from .scenario_env import ScenarioEnv
 
@@ -72,6 +74,8 @@ __all__ = [
     "eval_benchmark_open_loop",
     "eval_scenario_closed_loop",
     "eval_scenario_open_loop",
+    "open_loop_setting",
+    "closed_loop_setting",
     "evaluation_scenarios",
     "gain_terms",
     "load_controller_data",

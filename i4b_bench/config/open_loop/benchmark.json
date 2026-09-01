@@ -1,0 +1,12 @@
+{
+  "description": "The agreed set. Samples widely because open-loop windows are cheap: 600 of them cost about as much wall-clock as the closed-loop set does distributed.",
+  "n_scenarios": 30,
+  "seeds": 20,
+  "history_lengths": [
+    96,
+    192,
+    480,
+    2016
+  ],
+  "probes": 5
+}

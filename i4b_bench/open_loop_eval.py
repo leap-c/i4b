@@ -12,8 +12,10 @@ closed-loop action depends on the state the last one produced.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Protocol, Sequence
+import json
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
@@ -66,6 +68,10 @@ class OpenLoopBenchmark:
     """
 
     split: str = "test"
+    #: How many scenarios of the split to run, evenly spaced; None runs all of them. Part of
+    #: the setting because a ten-scenario run and a thirty-scenario run are not comparable, so
+    #: the thing that records what was run has to know.
+    n_scenarios: int | None = None
     view: str = "realistic"
     use_forecast: bool = True
     horizon: int = 96
@@ -81,59 +87,45 @@ class OpenLoopBenchmark:
 OPEN_LOOP = OpenLoopBenchmark()
 
 
+#: Named settings live as readable JSON beside the code, one file per set, so a configuration is
+#: a thing to send someone, diff against theirs, and cite. They are in the package rather than in
+#: the dataset directory because they define what the benchmark *measures*, which is a decision
+#: that belongs under version control -- the dataset directory is not.
+CONFIG = Path(__file__).parent / "config" / "open_loop"
+
+
+def open_loop_setting(name: str = "benchmark") -> OpenLoopBenchmark:
+    """Load a named setting, e.g. `fast`, `benchmark`, `full`."""
+    path = CONFIG / f"{name}.json"
+    if not path.exists():
+        have = sorted(p.stem for p in CONFIG.glob("*.json"))
+        raise KeyError(f"unknown setting {name!r}, have {have}")
+    body = json.loads(path.read_text())
+    body.pop("description", None)
+    body = {k: tuple(v) if isinstance(v, list) else v for k, v in body.items()}
+    return replace(OPEN_LOOP, **body)
+
+
 def eval_benchmark_open_loop(
     predictor: Predictor,
     *,
     dataset: BenchmarkDataset | None = None,
     dataset_dir=None,
     setting: OpenLoopBenchmark = OPEN_LOOP,
-    scenarios: Sequence[str] | None = None,
-    limit: int | None = None,
 ) -> pd.DataFrame:
     """Score a predictor on the open-loop benchmark.
 
-    Runs every scenario in the setting at every context length, and reports how well the
-    predictor tracks the building and how faithfully it responds to the control.
+    Runs every scenario in the setting at every context length, asking two things of each
+    window: does the prediction track the building, and does it move when the control moves. A
+    model can do the first while failing the second, which makes it useless inside a controller.
 
-    Two questions are asked of each window. *Accuracy* compares the prediction against what the
-    plant did under the control the corpus actually applied. *Control response* perturbs that
-    control, rolls the plant again for each perturbation, and asks whether the predictor's own
-    output moves the same way -- a model can track a room accurately while barely reacting to
-    the heat pump, which makes it useless inside a controller, and only the second measure
-    catches that.
-
-    Parameters
-    ----------
-    predictor
-        Called with a batch of observations and their candidate control trajectories; returns
-        one `{channel: (k, horizon)}` mapping per observation. See `Predictor`.
-    dataset, dataset_dir
-        A loaded corpus, or where to load one from.
-    setting
-        What must not vary between runs for two results to be comparable. Defaults to
-        `OPEN_LOOP`; pass a modified copy to explore, but note that results from different
-        settings are not comparable.
-    scenarios, limit
-        Override or shorten the scenario list. By default the setting's split decides it, and a
-        `limit` takes an evenly spaced subset rather than a prefix -- scenario ids sort by
-        country, so a prefix would be a handful of countries rather than a sample of the corpus.
-
-    Returns
-    -------
-    One row per scenario and context length, carrying `gain`, `mae_K` and `bias_K` alongside
-    the view and forecast source that produced them, so a saved table says what it measured.
-
-    Notes
-    -----
-    Gain is pooled within a scenario rather than averaged over its windows: a window where the
-    control barely moved the building contributes little to both sums instead of a loud and
-    meaningless ratio. Windows whose probes moved the room less than a millikelvin are reported
-    as `NaN` and counted separately.
+    Returns one row per scenario and context length. Gain is pooled within a scenario rather
+    than averaged over its windows, so a window where the control barely moved contributes
+    little instead of a loud ratio; those windows report NaN and are counted separately.
     """
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    if scenarios is None:
-        scenarios = evaluation_scenarios(dataset, setting.split, limit=limit)
+    scenarios = evaluation_scenarios(dataset, setting.split, limit=setting.n_scenarios)
 
     rows = []
     for history_length in setting.history_lengths:
@@ -156,6 +148,7 @@ def eval_benchmark_open_loop(
                     "scenario_id": scenario_id,
                     "history_length": history_length,
                     "view": setting.view,
+                    "n_scenarios": len(scenarios),
                     "use_forecast": setting.use_forecast,
                     "windows": len(result["windows"]),
                     "mae_K": result["mae_K"],

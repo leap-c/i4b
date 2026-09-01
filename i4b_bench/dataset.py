@@ -34,8 +34,17 @@ EXCITATION = {
     "open-loop-aprbs-24K": "open loop 24K",
 }
 EXCITATION_DTYPE = pd.CategoricalDtype(
-    ["none", "low", "medium", "high",
-     "open loop 1.5K", "open loop 3K", "open loop 6K", "open loop 12K", "open loop 24K"],
+    [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "open loop 1.5K",
+        "open loop 3K",
+        "open loop 6K",
+        "open loop 12K",
+        "open loop 24K",
+    ],
     ordered=True,
 )
 
@@ -74,14 +83,10 @@ def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
         Path to the dataset root. Defaults to ``<repo>/production``.
     """
     d = Path(dataset_dir or _DEFAULT_DIR)
-    exogenous = pd.read_parquet(d / "exogenous.parquet").rename(
-        columns=_RAW_COLUMN_RENAMES
-    )
+    exogenous = pd.read_parquet(d / "exogenous.parquet").rename(columns=_RAW_COLUMN_RENAMES)
     # Exogenous already has T_amb; drop the duplicate created by the rename.
     exogenous = exogenous.loc[:, ~exogenous.columns.duplicated()]
-    forecasts = pd.read_parquet(d / "forecasts.parquet").rename(
-        columns=_RAW_COLUMN_RENAMES
-    )
+    forecasts = pd.read_parquet(d / "forecasts.parquet").rename(columns=_RAW_COLUMN_RENAMES)
     return BenchmarkDataset(
         buildings=pd.read_parquet(d / "buildings.parquet"),
         scenarios=pd.read_parquet(d / "scenarios.parquet"),
@@ -127,9 +132,7 @@ def load_controller_data(
     the controller's state and action columns.
     """
     path = dataset.controllers_dir / f"{controller_id}.parquet"
-    frame = pd.read_parquet(
-        path, filters=[("scenario_id", "==", scenario_id)]
-    )
+    frame = pd.read_parquet(path, filters=[("scenario_id", "==", scenario_id)])
     frame["timestamp_utc"] = pd.to_datetime(frame["timestamp_utc"], utc=True)
 
     exo = dataset.exogenous[dataset.exogenous["scenario_id"] == scenario_id][

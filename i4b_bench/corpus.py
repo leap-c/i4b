@@ -10,7 +10,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
 TRANSITION_COLUMNS = (
     "trajectory_id",
     "timestamp_utc",
@@ -28,9 +27,7 @@ def _number(row: Mapping, name: str, default: float = 0.0) -> float:
     return default if value is None or pd.isna(value) else float(value)
 
 
-def design_mdot_hp(
-    row: Mapping, ambient: pd.Series, *, delta_t_K: float = 15.0
-) -> dict:
+def design_mdot_hp(row: Mapping, ambient: pd.Series, *, delta_t_K: float = 15.0) -> dict:
     """Size heat-pump flow transparently and return the sizing provenance."""
     h_total = _number(row, "transmission_W_m2K") * _number(row, "reference_area_m2")
     h_total += _number(row, "ventilation_W_m2K") * _number(row, "reference_area_m2")
@@ -56,9 +53,7 @@ def map_tabula_row(
 ) -> dict:
     """Map one normalized TABULA row to an I4B building parameter dictionary."""
     area = _number(row, "reference_area_m2")
-    total_window_area = _number(row, "window_1_area_m2") + _number(
-        row, "window_2_area_m2"
-    )
+    total_window_area = _number(row, "window_1_area_m2") + _number(row, "window_2_area_m2")
     directions = {
         "north": _number(row, "window_north_area_m2"),
         "east": _number(row, "window_east_area_m2"),
@@ -126,9 +121,7 @@ def make_catalog(
         building_id = str(row["building_id"])
         params_by_id[building_id] = params
         missing_orientation = row.get("window_orientation_missing", False)
-        missing_orientation = (
-            bool(missing_orientation) if pd.notna(missing_orientation) else False
-        )
+        missing_orientation = bool(missing_orientation) if pd.notna(missing_orientation) else False
         records.append(
             {
                 **row,
@@ -147,9 +140,7 @@ def make_catalog(
                 "mdot_hp_raw": sizing["mdot_hp_raw"],
                 "mdot_hp_clipped": sizing["mdot_hp_clipped"],
                 "window_orientation_imputed": missing_orientation,
-                "window_orientation_imputation": "equal_cardinal"
-                if missing_orientation
-                else None,
+                "window_orientation_imputation": "equal_cardinal" if missing_orientation else None,
                 "mapping_provenance": json.dumps(
                     {
                         "window_orientation": "equal_cardinal"
@@ -181,9 +172,7 @@ def validate_buildings(
     models = []
     for building_id, params in params_by_id.items():
         if not 0 <= params["H_tr_light"] < params["H_tr"]:
-            raise ValueError(
-                f"invalid light/heavy transmission split for {building_id}"
-            )
+            raise ValueError(f"invalid light/heavy transmission split for {building_id}")
         model = Building(dict(params), mdot_hp=params["mdot_hp"], method="4R3C")
         thermal = np.asarray(
             [
@@ -218,11 +207,7 @@ def validate_buildings(
     )
     ad, bd, cd = matrices
     bd = bd[..., None]
-    if (
-        ad.shape != (count, 3, 3)
-        or bd.shape != (count, 3, 1)
-        or cd.shape != (count, 3, 2)
-    ):
+    if ad.shape != (count, 3, 3) or bd.shape != (count, 3, 1) or cd.shape != (count, 3, 2):
         raise ValueError("unexpected 4R3C discrete matrix shapes")
     if not all(np.isfinite(matrix).all() for matrix in (ad, bd, cd)):
         raise ValueError("4R3C discrete matrices must be finite")
@@ -293,9 +278,7 @@ def prepare_disturbances(
         freq=f"{delta_t}s",
     )
     temperature = source["T_amb"].reindex(target_index).interpolate(method="time")
-    irradiance = source[["ghi", "dni", "dhi"]].reindex(
-        target_index, method="ffill"
-    )
+    irradiance = source[["ghi", "dni", "dhi"]].reindex(target_index, method="ffill")
     source = pd.concat([temperature, irradiance], axis=1)
 
     from i4b.disturbances import get_int_gains, get_solar_gains
@@ -305,9 +288,7 @@ def prepare_disturbances(
     if not timezone:
         raise ValueError("building position must define a timezone")
     local_time = source.index.tz_convert(timezone)
-    internal = get_int_gains(
-        local_time, str(internal_gain_profile), building_params["area_floor"]
-    )
+    internal = get_int_gains(local_time, str(internal_gain_profile), building_params["area_floor"])
     internal.index = source.index
     solar = get_solar_gains(gains_weather, building_params)
     result = pd.DataFrame(
@@ -416,9 +397,7 @@ def select_forecast_disturbances(
                 error = float(current_disturbance[ambient] - values[0, ambient])
                 lead_hours = np.arange(len(target)) * delta_t / 3600
                 values[:, ambient] += (
-                    correction_fraction
-                    * error
-                    * np.exp(-lead_hours / correction_decay_hours)
+                    correction_fraction * error * np.exp(-lead_hours / correction_decay_hours)
                 )
             values[0] = current_disturbance
             return values
@@ -441,13 +420,9 @@ def rollout_controller(
     for _ in range(n_steps):
         timestamp = env.get_cur_time()
         disturbance = env.get_cur_p()
-        state = {
-            name: float(observation[index]) for index, name in enumerate(env.obs_keys)
-        }
+        state = {name: float(observation[index]) for index, name in enumerate(env.obs_keys)}
         action = controller(state, env.p.iloc[env.t :])
-        next_observation, _, terminated, truncated, info = env.step(
-            env.normalize_action(action)
-        )
+        next_observation, _, terminated, truncated, info = env.step(env.normalize_action(action))
         rows.append(
             {
                 "trajectory_id": trajectory_id,
@@ -462,9 +437,7 @@ def rollout_controller(
         if terminated or truncated:
             break
     frame = pd.DataFrame(rows, columns=TRANSITION_COLUMNS)
-    frame[list(TRANSITION_COLUMNS[2:])] = frame[list(TRANSITION_COLUMNS[2:])].astype(
-        "float32"
-    )
+    frame[list(TRANSITION_COLUMNS[2:])] = frame[list(TRANSITION_COLUMNS[2:])].astype("float32")
     return frame
 
 
@@ -489,9 +462,7 @@ def aprbs(
     cursor = 0
     while cursor < len(values):
         hold = int(rng.integers(min_hold_steps, max_hold_steps + 1))
-        value = (
-            0.0 if rng.random() < nominal_fraction else float(rng.uniform(low, high))
-        )
+        value = 0.0 if rng.random() < nominal_fraction else float(rng.uniform(low, high))
         stop = min(cursor + hold, len(values))
         values[cursor:stop] = value
         cursor = stop
@@ -559,14 +530,9 @@ def make_split_manifests(
         n_train, n_validation, _ = expected
         family_split.update({family: "train" for family in ordered[:n_train]})
         family_split.update(
-            {
-                family: "validation"
-                for family in ordered[n_train : n_train + n_validation]
-            }
+            {family: "validation" for family in ordered[n_train : n_train + n_validation]}
         )
-        family_split.update(
-            {family: "test" for family in ordered[n_train + n_validation :]}
-        )
+        family_split.update({family: "test" for family in ordered[n_train + n_validation :]})
 
     intervals = {
         "train": (
@@ -585,20 +551,15 @@ def make_split_manifests(
     primary = trajectories.copy()
     primary["split"] = primary["building_family_id"].map(family_split)
     primary = primary[
-        (
-            (primary["split"].isin(["train", "validation"]))
-            & (primary["period_id"] == "period_a")
-        )
+        ((primary["split"].isin(["train", "validation"])) & (primary["period_id"] == "period_a"))
         | ((primary["split"] == "test") & (primary["period_id"] == "period_b"))
     ]
     requested = primary["split"].map(intervals)
     primary["start_time_utc"] = [
-        max(actual, interval[0])
-        for actual, interval in zip(primary["start_time_utc"], requested)
+        max(actual, interval[0]) for actual, interval in zip(primary["start_time_utc"], requested)
     ]
     primary["end_time_utc"] = [
-        min(actual, interval[1])
-        for actual, interval in zip(primary["end_time_utc"], requested)
+        min(actual, interval[1]) for actual, interval in zip(primary["end_time_utc"], requested)
     ]
     primary = primary[primary["start_time_utc"] < primary["end_time_utc"]]
 
@@ -614,6 +575,4 @@ def make_split_manifests(
         part = part[part["start_time_utc"] < part["end_time_utc"]]
         parts.append(part)
     columns = ["trajectory_id", "split", "start_time_utc", "end_time_utc"]
-    return primary[columns].reset_index(drop=True), pd.concat(parts, ignore_index=True)[
-        columns
-    ]
+    return primary[columns].reset_index(drop=True), pd.concat(parts, ignore_index=True)[columns]

@@ -1,0 +1,9 @@
+{
+  "description": "One scenario, a few windows. For CI and for checking a method runs at all.",
+  "n_scenarios": 1,
+  "seeds": 3,
+  "history_lengths": [
+    672
+  ],
+  "probes": 3
+}

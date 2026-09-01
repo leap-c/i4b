@@ -23,7 +23,6 @@ from .corpus import load_params
 from .dataset import BenchmarkDataset, load_controller_data, load_dataset
 from .forecast import ForecastProvider
 from .observation import (
-    CONTROL_CHANNELS,
     DISTURBANCE_CHANNELS,
     STATE_CHANNELS,
     ObsView,
@@ -75,9 +74,7 @@ class ScenarioEnv:
         self._history_channels = history_channels(view)
 
         # Resolve scenario metadata
-        scenario_row = dataset.scenarios[
-            dataset.scenarios["scenario_id"] == scenario_id
-        ].iloc[0]
+        scenario_row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id].iloc[0]
         building_id = scenario_row["building_id"]
 
         # Load building params and create the inner environment
@@ -85,9 +82,7 @@ class ScenarioEnv:
         mdot_hp = self._building_params["mdot_hp"]
 
         # Load exogenous for this scenario (timestamp-indexed from here on)
-        exo = dataset.exogenous[
-            dataset.exogenous["scenario_id"] == scenario_id
-        ].copy()
+        exo = dataset.exogenous[dataset.exogenous["scenario_id"] == scenario_id].copy()
         exo["timestamp_utc"] = pd.to_datetime(exo["timestamp_utc"], utc=True)
         self._exogenous = exo.set_index("timestamp_utc").sort_index()
 
@@ -197,9 +192,7 @@ class ScenarioEnv:
 
         if traj is not None:
             # Set the building state from the recorded trajectory at start_step
-            state_at_start = {
-                ch: float(traj.iloc[self._start_step][ch]) for ch in STATE_CHANNELS
-            }
+            state_at_start = {ch: float(traj.iloc[self._start_step][ch]) for ch in STATE_CHANNELS}
             self._env.state = self._env._build_observation(state_at_start)
 
         # Seed the history buffer from the recorded trajectory
@@ -221,9 +214,7 @@ class ScenarioEnv:
             record = {ch: float(getattr(row, ch)) for ch in STATE_CHANNELS}
             record.update({ch: float(getattr(previous, ch)) for ch in input_channels})
             self._history_buffer.append(record)
-            self._timestamps.append(
-                row.timestamp_utc.to_datetime64().astype("datetime64[s]")
-            )
+            self._timestamps.append(row.timestamp_utc.to_datetime64().astype("datetime64[s]"))
 
         self._step_count = 0
         return self._build_observation(), {}
@@ -252,9 +243,7 @@ class ScenarioEnv:
             record[ch] = float(exo_row[ch])
 
         self._history_buffer.append(record)
-        self._timestamps.append(
-            timestamp.to_datetime64().astype("datetime64[s]")
-        )
+        self._timestamps.append(timestamp.to_datetime64().astype("datetime64[s]"))
 
         # Trim history buffer to max length
         if len(self._history_buffer) > self._max_context_length:
