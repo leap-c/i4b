@@ -7,11 +7,13 @@ amplitude, so the levels above 3 K are the ones missing for any study of how muc
 dynamics model needs.
 
 This follows `generate_safe_aprbs.py` exactly -- same waveform, same `legacy` integrator, same
-metadata -- with two differences:
+metadata -- with three differences:
 
   * the amplitude is a parameter, and each level becomes its own controller id
   * the nominal baseline is read from the published transitions rather than `.staging`, which
     is emptied once a corpus is finalised
+  * the disturbances are read from the corpus' own `exogenous.parquet` rather than re-derived
+    from raw weather, so an appended level cannot disagree with the corpus it joins
 
 The waveform is seeded on the *base* trajectory id by default, so the levels form a clean
 amplitude ladder over one realisation rather than confounding amplitude with a reseed.
@@ -32,12 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow.dataset as ds
-from i4b_bench.corpus import (
-    TRANSITION_COLUMNS,
-    load_params,
-    prepare_disturbances,
-    read_reference_weather,
-)
+from i4b_bench.corpus import TRANSITION_COLUMNS, load_params
 from i4b_bench.generation import aprbs
 
 from i4b.gym_interface.room_env import RoomHeatEnv
@@ -76,10 +73,32 @@ def _init_worker(root: str, dataset: str) -> None:
     _catalog = pd.read_parquet(_dataset / "buildings.parquet")
 
 
-def _weather_path(country: str, period_id: str) -> Path:
-    config = json.loads((_root / "scripts/benchmark_source_data.json").read_text())
-    location = next(item["id"] for item in config["locations"] if item["country"] == country)
-    return _root / "source-data/normalized/weather_reference" / f"{location}_{period_id}.parquet"
+def _published_disturbances(scenario_id: str) -> pd.DataFrame:
+    """The disturbances the corpus recorded for this scenario, not a fresh derivation of them.
+
+    Re-deriving from raw weather is what made the first attempt at these levels unusable: the
+    corpus was built before `prepare_disturbances` gained interpolated ambient and local-time
+    internal gains, so a re-derivation disagreed with `exogenous.parquet` by up to 6.0 K and
+    168.6 W, and moved the scored channel by as much as the benchmark's entire MAE range. Reading
+    the record instead makes a trajectory consistent with the corpus it is appended to by
+    construction, whatever convention that corpus was built under.
+    """
+    frame = pd.read_parquet(
+        _dataset / "exogenous.parquet",
+        columns=["timestamp_utc", "T_amb", "Qdot_gains"],
+        filters=[("scenario_id", "==", scenario_id)],
+    ).sort_values("timestamp_utc")
+    if frame.empty:
+        raise FileNotFoundError(f"no exogenous rows for {scenario_id}")
+    index = pd.DatetimeIndex(frame["timestamp_utc"], name="timestamp_utc")
+    published = pd.DataFrame(
+        {"T_amb": frame["T_amb"].to_numpy(), "Qdot_gains": frame["Qdot_gains"].to_numpy()},
+        index=index,
+    )
+    # `exogenous` holds one row per *step*; the plant reads one row past the last step, which is
+    # never recorded. Repeating the final row leaves every recorded step untouched.
+    tail = published.iloc[[-1]].set_axis([index[-1] + (index[1] - index[0])])
+    return pd.concat([published, tail]).astype("float32")
 
 
 def _nominal_actions(building_id: str, period_id: str) -> np.ndarray:
@@ -138,11 +157,8 @@ def _simulate(params, disturbances, seed_id, nominal_actions, amplitude):
 
 def _job(job: tuple[str, str, float, bool]) -> dict:
     building_id, period_id, amplitude, reseed = job
-    row = _catalog.loc[_catalog["building_id"] == building_id].iloc[0]
     params = load_params(_catalog, building_id)
-    weather = read_reference_weather(_weather_path(str(row["country_code"]), period_id))
-    profile = _root / "i4b_data/profiles/InternalGains/ResidentialDetached.csv"
-    disturbances = prepare_disturbances(weather, params, profile)
+    disturbances = _published_disturbances(f"{building_id}--{period_id}")
     nominal = _nominal_actions(building_id, period_id)
     expected_rows = len(disturbances) - 1
     if len(nominal) != expected_rows:
