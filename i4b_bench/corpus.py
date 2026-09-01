@@ -259,8 +259,14 @@ def prepare_disturbances(
     internal_gain_profile: str | Path,
     *,
     delta_t: int = 900,
+    keep_irradiance: bool = False,
 ) -> pd.DataFrame:
-    """Create 15-minute I4B disturbances from normalized hourly reference weather."""
+    """Create 15-minute I4B disturbances from normalized hourly reference weather.
+
+    Returns exactly the two channels the plant takes. `keep_irradiance` additionally returns the
+    resampled `ghi`/`dni`/`dhi` the gains were computed from, which the `realistic` view's
+    forecasts need -- `RoomHeatEnv` rejects a frame with any other column, so it is off by
+    default."""
     required = {"valid_time_utc", "T_amb", "ghi", "dni", "dhi"}
     missing = required - set(weather.columns)
     if missing:
@@ -308,14 +314,12 @@ def prepare_disturbances(
         {
             "T_amb": source["T_amb"].astype("float32"),
             "Qdot_gains": (solar + internal["Qdot_tot"]).astype("float32"),
-            # the irradiance the gains were computed from, kept because the `realistic` view is
-            # defined in raw-weather space and its forecasts need these channels
-            "ghi": source["ghi"].astype("float32"),
-            "dni": source["dni"].astype("float32"),
-            "dhi": source["dhi"].astype("float32"),
         },
         index=source.index,
     )
+    if keep_irradiance:
+        for channel in ("ghi", "dni", "dhi"):
+            result[channel] = source[channel].astype("float32")
     result.index.name = "timestamp_utc"
     return result
 
@@ -350,6 +354,7 @@ def prepare_forecast_runs(
             building_params,
             internal_gain_profile,
             delta_t=delta_t,
+            keep_irradiance=True,
         )
     return runs
 

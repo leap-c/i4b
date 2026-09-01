@@ -105,3 +105,32 @@ def test_a_model_never_sees_the_wall_temperature(dataset, scenario):
 
     eval_scenario_open_loop(scenario, predictor, dataset=dataset, seeds=1, use_forecast=False)
     assert "T_wall" not in seen["forecast"]
+
+
+@needs_dataset
+def test_prepare_disturbances_matches_the_plant_contract(dataset):
+    """`RoomHeatEnv` rejects any frame that is not exactly its two channels.
+
+    Adding the irradiance the `realistic` forecast needs to this frame silently broke every
+    generation script, because the plant validates the column set rather than selecting from it.
+    """
+    from i4b.gym_interface.room_env import RoomHeatEnv
+    from i4b_bench.corpus import load_params, prepare_disturbances, read_reference_weather
+    from i4b_bench.observation import internal_gain_profile
+
+    row = dataset.scenarios.iloc[0]
+    params = load_params(dataset.buildings, row["building_id"])
+    weather = read_reference_weather(
+        Path(__file__).resolve().parents[1]
+        / "source-data/normalized/weather_reference"
+        / f"{row['location_id']}_{row['period_id']}.parquet"
+    )
+    plain = prepare_disturbances(weather, params, internal_gain_profile())
+    assert list(plain.columns) == ["T_amb", "Qdot_gains"]
+    RoomHeatEnv(  # would raise if the contract drifted
+        hp_model="Heatpump_AW", building=None, method="4R3C",
+        mdot_HP=float(params["mdot_hp"]), internal_gain_profile="unused",
+        building_params=params, disturbances=plain, backend="legacy",
+    )
+    wide = prepare_disturbances(weather, params, internal_gain_profile(), keep_irradiance=True)
+    assert set(wide.columns) == {"T_amb", "Qdot_gains", "ghi", "dni", "dhi"}
