@@ -54,9 +54,7 @@ def _weather_payload(times: list[str]) -> list[dict]:
 def test_window_orientation_missing_flag():
     """Window area present but no cardinal split - flags the Norwegian variants,
     which must be marked rather than imputed."""
-    with_split = dict.fromkeys(
-        ["window_1_area_m2", "window_2_area_m2"], 20.0
-    ) | dict.fromkeys(
+    with_split = dict.fromkeys(["window_1_area_m2", "window_2_area_m2"], 20.0) | dict.fromkeys(
         [
             "window_east_area_m2",
             "window_south_area_m2",
@@ -124,9 +122,7 @@ def test_artifact_up_to_date(tmp_path: Path):
     assert pbd.artifact_up_to_date(parquet_path, manifest_path, request)
     # An edited config must invalidate, not silently relabel someone else's data.
     assert not pbd.artifact_up_to_date(parquet_path, manifest_path, {"lat": 49.0})
-    assert not pbd.artifact_up_to_date(
-        tmp_path / "nope.parquet", manifest_path, request
-    )
+    assert not pbd.artifact_up_to_date(tmp_path / "nope.parquet", manifest_path, request)
 
     pbd.write_json(manifest_path, {"normalized_sha256": "stale", "request": request})
     assert not pbd.artifact_up_to_date(parquet_path, manifest_path, request)

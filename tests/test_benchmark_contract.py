@@ -8,17 +8,16 @@ have caught the crash fixed in 861cf96.
 """
 
 import os
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from i4b_bench import DISTURBANCE_CHANNELS, ScenarioEnv, control_gain, load_dataset
-from i4b_bench.open_loop_eval import eval_scenario_open_loop
+from i4b_bench.open_loop_eval import eval_scenario_open_loop, open_loop_setting
 
-DATASET = Path(
-    os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production")
-)
+DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production"))
 needs_dataset = pytest.mark.skipif(
     not (DATASET / "trajectories.parquet").exists(), reason="benchmark dataset not present"
 )
@@ -64,8 +63,12 @@ def test_forecast_matches_the_view_channels(dataset, scenario, view, use_forecas
     published run to become eligible -- at reset the bug this guards was invisible.
     """
     env = ScenarioEnv(
-        scenario, dataset=dataset, view=view, use_forecast=use_forecast,
-        max_context_length=96, planning_steps=12,
+        scenario,
+        dataset=dataset,
+        view=view,
+        use_forecast=use_forecast,
+        max_context_length=96,
+        planning_steps=12,
     )
     observation, _ = env.reset()
     for _ in range(400):
@@ -94,7 +97,11 @@ def test_a_model_never_sees_the_wall_temperature(dataset, scenario):
         seen["forecast"] = set(observations[0]["forecast"])
         return [{"T_room": np.zeros(u.shape)} for u in controls]
 
-    eval_scenario_open_loop(scenario, predictor, dataset=dataset, seeds=1, use_forecast=False)
+    setting = open_loop_setting("fast_eval")
+    window = next(iter(setting.scenarios.values()))
+    eval_scenario_open_loop(
+        window, predictor, dataset=dataset, setting=replace(setting, use_forecast=False)
+    )
     assert "T_wall" not in seen["forecast"]
 
 
@@ -119,9 +126,14 @@ def test_prepare_disturbances_matches_the_plant_contract(dataset):
     plain = prepare_disturbances(weather, params, internal_gain_profile())
     assert list(plain.columns) == ["T_amb", "Qdot_gains"]
     RoomHeatEnv(  # would raise if the contract drifted
-        hp_model="Heatpump_AW", building=None, method="4R3C",
-        mdot_HP=float(params["mdot_hp"]), internal_gain_profile="unused",
-        building_params=params, disturbances=plain, backend="legacy",
+        hp_model="Heatpump_AW",
+        building=None,
+        method="4R3C",
+        mdot_HP=float(params["mdot_hp"]),
+        internal_gain_profile="unused",
+        building_params=params,
+        disturbances=plain,
+        backend="legacy",
     )
     wide = prepare_disturbances(weather, params, internal_gain_profile(), keep_irradiance=True)
     assert set(wide.columns) == {"T_amb", "Qdot_gains", "ghi", "dni", "dhi"}

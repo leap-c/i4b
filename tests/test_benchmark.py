@@ -78,9 +78,7 @@ def test_mapped_building_has_valid_discrete_matrices():
     assert cd.shape == (1, 3, 2)
 
 
-def test_disturbance_internal_gains_follow_local_time_across_dst(
-    tmp_path, monkeypatch
-):
+def test_disturbance_internal_gains_follow_local_time_across_dst(tmp_path, monkeypatch):
     profile = pd.DataFrame(
         {
             "hour": range(24),
@@ -96,9 +94,7 @@ def test_disturbance_internal_gains_follow_local_time_across_dst(
     profile.to_csv(profile_path, sep=";", index=False)
     weather = pd.DataFrame(
         {
-            "valid_time_utc": pd.date_range(
-                "2025-03-30T00:00Z", periods=2, freq="1h"
-            ),
+            "valid_time_utc": pd.date_range("2025-03-30T00:00Z", periods=2, freq="1h"),
             "T_amb": [5.0, 6.0],
             "ghi": 0.0,
             "dni": 0.0,
@@ -185,27 +181,15 @@ def test_split_manifests_separate_family_and_time():
     assert len(primary) < len(trajectories)
     assert set(time_only["split"]) == {"train", "validation", "test"}
     assert len(time_only) == 3 * sum(country_counts.values())
-    assert (
-        primary.loc[primary["split"] == "test", "trajectory_id"]
-        .str.endswith("period_b")
-        .all()
-    )
+    assert primary.loc[primary["split"] == "test", "trajectory_id"].str.endswith("period_b").all()
     intervals = primary.groupby("split")[["start_time_utc", "end_time_utc"]].first()
-    assert (
-        intervals.loc["train", "end_time_utc"]
-        <= intervals.loc["validation", "start_time_utc"]
-    )
-    assert (
-        intervals.loc["validation", "end_time_utc"]
-        <= intervals.loc["test", "start_time_utc"]
-    )
+    assert intervals.loc["train", "end_time_utc"] <= intervals.loc["validation", "start_time_utc"]
+    assert intervals.loc["validation", "end_time_utc"] <= intervals.loc["test", "start_time_utc"]
 
     family_by_trajectory = trajectories.set_index("trajectory_id")["building_family_id"]
     family_sets = {
         split: set(
-            primary.loc[primary["split"] == split, "trajectory_id"].map(
-                family_by_trajectory
-            )
+            primary.loc[primary["split"] == split, "trajectory_id"].map(family_by_trajectory)
         )
         for split in ("train", "validation", "test")
     }

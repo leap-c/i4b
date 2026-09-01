@@ -8,9 +8,7 @@ from scripts.finalize_benchmark_tables import _aligned_source, _write_prices
 def test_aligned_source_interpolates_temperature_to_benchmark_timestep():
     source = pd.DataFrame(
         {
-            "valid_time_utc": pd.date_range(
-                "2025-01-01", periods=2, freq="1h", tz="UTC"
-            ),
+            "valid_time_utc": pd.date_range("2025-01-01", periods=2, freq="1h", tz="UTC"),
             "temperature_2m_C": [1.0, 2.0],
             "ghi_W_m2": [100.0, 200.0],
         }

@@ -1,0 +1,16 @@
+# One building, one winter day. For CI, and for checking a controller runs at all.
+
+common:
+  split: test
+  view: realistic
+  use_forecast: true
+  planning_horizon: 96
+  context_days: 21
+  forecast_correction: 0.5
+
+scenarios:
+  scenario1:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2026-01-08
+    end: 2026-01-09
+    controller: mpc-aprbs-high

@@ -8,81 +8,66 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import tomllib
+import yaml
 
-from . import scenario
 from .dataset import (
     PER_DAY,
     BenchmarkDataset,
+    evaluation_scenarios,
     load_dataset,
+    scenario_metadata,
     step_of,
 )
-from .scenario import Scenario
 from .scenario_env import ScenarioEnv
+
+CONFIG = Path(__file__).parent / "config" / "closed_loop"
+
+
+@dataclass(frozen=True)
+class Episode:
+    """One problem instance: a building, the dates it runs between, and what seeded its history."""
+
+    building: str
+    start: date
+    end: date
+    #: Whose recorded run fills the context handed over at the start. Excited rather than
+    #: nominal: the history then contains control variation the room actually responded to,
+    #: which is what makes the dynamics identifiable from it, and it is less of a head start for
+    #: controllers that happen to resemble the MPC that produced the state.
+    controller: str
 
 
 @dataclass(frozen=True)
 class ClosedLoopBenchmark:
-    """What must not vary between closed-loop runs.
-
-    These were defaults on `eval_scenario_closed_loop` rather than configuration, so a
-    benchmark run could not pin them and two runs could differ silently on the context length
-    or the controller their history was seeded from.
-    """
+    """What must not vary between closed-loop runs for two results to be comparable."""
 
     split: str
-    #: The scenarios to run, named outright; None runs the whole split. Named rather than
-    #: counted so that adding buildings to the corpus cannot silently change which problems a
-    #: benchmark covers. Generate a set with `python -m i4b_bench.select_scenarios`.
-    scenarios: tuple[str, ...] | None
     view: str
     use_forecast: bool
-    planning_steps: int
+    planning_horizon: int
     #: Generous on purpose. The buffer costs only memory, and a context shorter than a method
     #: wants silently penalises it -- a foundation model asking for three weeks got one day.
-    max_context_length: int
-    initial_context_length: int | None
-    #: Excited rather than nominal: the handed-over history then contains control variation the
-    #: room actually responded to, which is what makes the dynamics identifiable from it at all.
-    #: It is also less of a head start for controllers that happen to resemble the MPC that
-    #: produced the state. Deliberately one of the original controllers -- the open-loop
-    #: excitation levels carry a weather inconsistency that would propagate into every run.
-    initial_controller_id: str
-    #: When the run begins, as a date. It matters as much as the duration -- a fortnight in May
-    #: and one in January are different problems -- and a date says which, where a step index
-    #: says nothing and quietly means something else if a period ever shifts.
-    start: datetime
-    #: How long it runs, in days. Weather dominates the level of these metrics, a colder week
-    #: costing several times the comfort violation of a mild one, so a short window measures the
-    #: week as much as the controller. Comparisons stay paired -- same scenario, same window --
-    #: so weather cancels in differences, but absolutes mean little without the dates beside them.
-    evaluation_days: float
+    context_days: float
     #: A controller would correct an archived forecast against its own sensor, so unlike the
     #: open loop this is not zero.
     forecast_correction: float
-
-
-#: Named settings live as readable TOML beside the code, one file per set, so a configuration is
-#: a thing to send someone, diff against theirs, and cite. They are in the package rather than in
-#: the dataset directory because they define what the benchmark *measures*, which is a decision
-#: that belongs under version control -- the dataset directory is not.
-CONFIG = Path(__file__).parent / "config" / "closed_loop"
+    scenarios: dict[str, Episode]
 
 
 def closed_loop_setting(name: str = "benchmark") -> ClosedLoopBenchmark:
-    """Load a named setting, e.g. `fast`, `benchmark`, `full`."""
-    path = CONFIG / f"{name}.toml"
+    """Load a named setting from `config/closed_loop/<name>.yaml`."""
+    path = CONFIG / f"{name}.yaml"
     if not path.exists():
-        have = sorted(p.stem for p in CONFIG.glob("*.toml"))
+        have = sorted(p.stem for p in CONFIG.glob("*.yaml"))
         raise KeyError(f"unknown setting {name!r}, have {have}")
-    body = tomllib.loads(path.read_text())
-    body = {k: tuple(v) if isinstance(v, list) else v for k, v in body.items()}
-    return ClosedLoopBenchmark(**body)
+    body = yaml.safe_load(path.read_text())
+    episodes = {name: Episode(**entry) for name, entry in body["scenarios"].items()}
+    return ClosedLoopBenchmark(**body["common"], scenarios=episodes)
 
 
 def eval_benchmark_closed_loop(
@@ -102,30 +87,31 @@ def eval_benchmark_closed_loop(
     setting = setting or closed_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
-    scenarios = _resolve_scenarios(setting)
+    _check_split(dataset, setting)
 
+    context = round(setting.context_days * PER_DAY)
     rows = []
-    for chosen in scenarios:
+    for name, episode in setting.scenarios.items():
+        start = step_of(dataset, episode.building, episode.start)
+        end = step_of(dataset, episode.building, episode.end)
         result = eval_scenario_closed_loop(
-            chosen.corpus_id,
+            episode.building,
             controller,
             dataset=dataset,
-            initial_controller_id=setting.initial_controller_id,
-            max_context_length=setting.max_context_length,
-            initial_context_length=setting.initial_context_length,
-            planning_steps=setting.planning_steps,
-            n_evaluation_steps=round(setting.evaluation_days * PER_DAY),
-            start_step=step_of(dataset, chosen.corpus_id, setting.start),
+            initial_controller_id=episode.controller,
+            max_context_length=context,
+            initial_context_length=context,
+            planning_steps=setting.planning_horizon,
+            n_evaluation_steps=end - start,
+            start_step=start,
             use_forecast=setting.use_forecast,
         )
         rows.append(
             {
-                **chosen.metadata(),
-                "view": setting.view,
-                "start": setting.start.date().isoformat(),
-                "evaluation_days": setting.evaluation_days,
-                "n_scenarios": len(scenarios),
-                "use_forecast": setting.use_forecast,
+                "scenario": name,
+                **scenario_metadata(dataset, episode.building),
+                "start": str(episode.start),
+                "end": str(episode.end),
                 "steps": len(result["trajectory"]),
                 "energy_kwh": result["energy_kwh"],
                 "comfort_violation_degree_hours": result["comfort_violation_degree_hours"],
@@ -217,17 +203,11 @@ def eval_scenario_closed_loop(
     }
 
 
-def _resolve_scenarios(setting) -> list[Scenario]:
-    """The scenarios to run, loaded from their files and checked against the declared split.
-
-    Named scenarios make `split` a guard rather than a selector: pasting a training scenario
-    into a held-out set fails here instead of quietly producing a number nobody can trust.
-    """
-    names = setting.scenarios if setting.scenarios is not None else scenario.available()
-    chosen = [scenario.load(name) for name in names]
-    stray = sorted(s.name for s in chosen if s.split != setting.split)
+def _check_split(dataset, setting) -> None:
+    """Every named building must belong to the declared split."""
+    available = set(evaluation_scenarios(dataset, setting.split))
+    stray = sorted({e.building for e in setting.scenarios.values()} - available)
     if stray:
         raise ValueError(
-            f"{len(stray)} scenario(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
+            f"{len(stray)} building(s) are not in the {setting.split!r} split, e.g. {stray[0]}"
         )
-    return chosen

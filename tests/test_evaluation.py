@@ -8,9 +8,7 @@ import pytest
 
 from i4b_bench import ScenarioEnv, eval_scenario_closed_loop, evaluation_scenarios, load_dataset
 
-DATASET = Path(
-    os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production")
-)
+DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production"))
 pytestmark = pytest.mark.skipif(
     not (DATASET / "trajectories.parquet").exists(), reason="benchmark dataset not present"
 )
@@ -34,7 +32,10 @@ def test_current_state_is_the_last_history_row(dataset, scenario, max_context_le
     controller's context changes convention part-way through an episode.
     """
     env = ScenarioEnv(
-        scenario, dataset=dataset, max_context_length=max_context_length, planning_steps=96,
+        scenario,
+        dataset=dataset,
+        max_context_length=max_context_length,
+        planning_steps=96,
         start_step=1000,
     )
     obs, _ = env.reset()
@@ -64,11 +65,18 @@ def test_history_is_contiguous_and_forecast_follows_it(dataset, scenario):
 
 def test_run_evaluation_reports_the_agreed_quantities(dataset, scenario):
     result = eval_scenario_closed_loop(
-        scenario, lambda obs: (30.0, None), dataset=dataset, max_context_length=96,
-        planning_steps=96, n_evaluation_steps=8,
+        scenario,
+        lambda obs: (30.0, None),
+        dataset=dataset,
+        max_context_length=96,
+        planning_steps=96,
+        n_evaluation_steps=8,
     )
     assert set(result) == {
-        "energy_kwh", "comfort_violation_degree_hours", "planning_seconds_mean", "trajectory"
+        "energy_kwh",
+        "comfort_violation_degree_hours",
+        "planning_seconds_mean",
+        "trajectory",
     }
     assert len(result["trajectory"]) == 8
     assert {"T_room", "T_hp_ret", "planning_seconds"} <= set(result["trajectory"].columns)
