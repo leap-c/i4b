@@ -12,9 +12,8 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-
 from i4b_bench.corpus import TRANSITION_COLUMNS
-from i4b_bench_data import make_split_manifests
+from i4b_bench.generation import make_split_manifests
 
 EXPECTED_TRAJECTORIES = 191 * 2 * 7
 MPC_CONTROLLERS = {

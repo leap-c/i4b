@@ -1,4 +1,4 @@
-"""Offline tests for scripts/prepare_benchmark_data.py.
+"""Offline tests for benchmark/scripts/prepare_benchmark_data.py.
 
 Deliberately small. The normalized schema, the country set, the periods, and
 the cohort counts are all still moving, so tests that pin those would just be

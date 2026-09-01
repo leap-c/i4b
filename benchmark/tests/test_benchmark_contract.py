@@ -7,13 +7,13 @@ combination returns the channels its view declares -- the last of which is the c
 have caught the crash fixed in 861cf96.
 """
 
+import importlib.util
 import os
 from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pytest
-
 from i4b_bench import DISTURBANCE_CHANNELS, ScenarioEnv, control_gain, load_dataset
 from i4b_bench.open_loop_eval import eval_scenario_open_loop, open_loop_setting
 
@@ -35,7 +35,7 @@ def scenario(dataset):
 
 def test_i4b_does_not_import_the_benchmark():
     """The dependency runs one way, so the benchmark stays extractable and `i4b` stays upstream's."""
-    root = Path(__file__).resolve().parents[1] / "i4b"
+    root = Path(importlib.util.find_spec("i4b").origin).parent
     offenders = [
         path.relative_to(root.parent)
         for path in root.rglob("*.py")
@@ -112,9 +112,10 @@ def test_prepare_disturbances_matches_the_plant_contract(dataset):
     Adding the irradiance the `realistic` forecast needs to this frame silently broke every
     generation script, because the plant validates the column set rather than selecting from it.
     """
-    from i4b.gym_interface.room_env import RoomHeatEnv
     from i4b_bench.corpus import load_params, prepare_disturbances, read_reference_weather
     from i4b_bench.observation import internal_gain_profile
+
+    from i4b.gym_interface.room_env import RoomHeatEnv
 
     row = dataset.scenarios.iloc[0]
     params = load_params(dataset.buildings, row["building_id"])

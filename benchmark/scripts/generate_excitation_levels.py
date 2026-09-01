@@ -32,10 +32,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow.dataset as ds
-
-from i4b_bench.corpus import TRANSITION_COLUMNS, load_params, prepare_disturbances, read_reference_weather
-from i4b_bench_data import aprbs
+from i4b_bench.corpus import (
+    TRANSITION_COLUMNS,
+    load_params,
+    prepare_disturbances,
+    read_reference_weather,
 )
+from i4b_bench.generation import aprbs
+
 from i4b.gym_interface.room_env import RoomHeatEnv
 
 BASE_CONTROLLER = "open-loop-aprbs"
@@ -204,7 +208,7 @@ def main() -> None:
         futures = [executor.submit(_job, job) for job in jobs]
         for future in as_completed(futures):
             try:
-                result = future.result()
+                future.result()  # re-raises whatever the worker hit
             except Exception as error:  # keep going; the run is resumable
                 failed += 1
                 print(f"FAILED: {error!r}", flush=True)

@@ -8,8 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
-
-from i4b_bench_data import make_catalog, validate_buildings
+from i4b_bench.generation import make_catalog, validate_buildings
 
 
 def main() -> None:

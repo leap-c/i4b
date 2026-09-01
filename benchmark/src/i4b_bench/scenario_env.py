@@ -1,7 +1,7 @@
 """Scenario-augmented I4B building environment for closed-loop evaluation.
 
 Wraps ``RoomHeatEnv`` and produces the structured observation `i4b_bench.observation` defines.
-See docs/EVAL_SPEC.md.
+See specs/EVAL_SPEC.md.
 
 History alignment
 -----------------

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from i4b_bench.corpus import (
     TRANSITION_COLUMNS,
     prepare_disturbances,
     select_forecast_disturbances,
 )
-from i4b_bench_data import (
+from i4b_bench.generation import (
     aprbs,
     design_mdot_hp,
     make_split_manifests,

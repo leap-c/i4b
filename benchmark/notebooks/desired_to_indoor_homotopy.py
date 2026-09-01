@@ -18,7 +18,7 @@ def _():
     from i4b_bench.corpus import prepare_disturbances
     from i4b.gym_interface import BUILDING_NAMES2CLASS
     from i4b.gym_interface.room_env import RoomHeatEnv
-from i4b_bench_data import aprbs
+    from i4b_bench.generation import aprbs
 
     return (
         BUILDING_NAMES2CLASS,

@@ -1,7 +1,8 @@
 """Building the corpus: the catalog, the trajectories, and the split.
 
-This is how the dataset is *made*. Evaluating against it needs none of this -- `i4b_bench` reads
-the finished corpus and never imports from here, which is what lets the two move independently.
+This is how the dataset is *made*. Evaluating against it needs none of this -- the rest of
+`i4b_bench` reads the finished corpus and never imports from here, which is what lets generation
+and evaluation move independently.
 """
 
 from __future__ import annotations

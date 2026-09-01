@@ -13,10 +13,14 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-from i4b_bench.corpus import TRANSITION_COLUMNS, load_params, prepare_disturbances, read_reference_weather
-from i4b_bench_data import aprbs
+from i4b_bench.corpus import (
+    TRANSITION_COLUMNS,
+    load_params,
+    prepare_disturbances,
+    read_reference_weather,
 )
+from i4b_bench.generation import aprbs
+
 from i4b.gym_interface.room_env import RoomHeatEnv
 
 _catalog: pd.DataFrame

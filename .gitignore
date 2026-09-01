@@ -63,10 +63,11 @@ pytest_cache/
 *.local
 *.secret
 
-# Benchmark source-data acquisition output (scripts/prepare_benchmark_data.py)
-/source-data/
-/i4b-benchmark*/
-/production*/
+# The benchmark corpus and its source data: regenerable, and far too large to track.
+# (benchmark/scripts/prepare_benchmark_data.py fetches the source data.)
+/benchmark/source-data/
+/benchmark/production*/
+/benchmark/i4b-benchmark*/
 
 # marimo session caches
 __marimo__/

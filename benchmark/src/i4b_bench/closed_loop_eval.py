@@ -1,6 +1,6 @@
 """Closed-loop controller evaluation on I4B benchmark scenarios.
 
-See docs/EVAL_SPEC.md for the full specification.
+See specs/EVAL_SPEC.md for the full specification.
 """
 
 from __future__ import annotations
