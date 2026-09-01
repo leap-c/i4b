@@ -57,7 +57,8 @@ src/i4b_bench/        the library
   generation.py         how the corpus is *made*; the rest of the package never imports it
   config/               the settings, one YAML per named set per loop -- see config/README.md
 scripts/              building, finalizing and reporting on the corpus
-specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is measured)
+specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is
+                      measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
 notebooks/            marimo notebooks over the corpus and its source data
 tests/                the contract: the import boundary, the views, gain calibration, leakage
 tickets/              design notes for the dataset and its acquisition
