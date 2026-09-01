@@ -14,7 +14,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from i4b.benchmark import TRANSITION_COLUMNS, aprbs, load_params, prepare_disturbances
+from i4b_bench.corpus import (
+    TRANSITION_COLUMNS,
+    aprbs,
+    load_params,
+    prepare_disturbances,
+    read_reference_weather,
+)
 from i4b.gym_interface.room_env import RoomHeatEnv
 
 _catalog: pd.DataFrame
@@ -118,7 +124,7 @@ def _job(job: tuple[str, str]) -> dict:
     building_id, period_id = job
     row = _catalog.loc[_catalog["building_id"] == building_id].iloc[0]
     params = load_params(_catalog, building_id)
-    weather = pd.read_parquet(_weather_path(str(row["country_code"]), period_id))
+    weather = read_reference_weather(_weather_path(str(row["country_code"]), period_id))
     weather = weather.rename(columns={
         "temperature_2m_C": "T_amb",
         "ghi_W_m2": "ghi",

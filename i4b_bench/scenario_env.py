@@ -21,7 +21,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from i4b.benchmark import load_params, prepare_forecast_runs, select_forecast_disturbances
+from .corpus import load_params, prepare_forecast_runs, select_forecast_disturbances
 
 from .dataset import BenchmarkDataset, load_controller_data, load_dataset
 
@@ -106,6 +106,7 @@ class ForecastProvider:
                 decision_time,
                 planning_steps,
                 current_disturbance,
+                channels=self._disturbance_channels,
             )
             # raw[0] is decision_time (current), raw[1:] is the forecast
             values = raw[1 : planning_steps + 1]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from i4b.benchmark import (
+from i4b_bench.corpus import (
     TRANSITION_COLUMNS,
     aprbs,
     design_mdot_hp,

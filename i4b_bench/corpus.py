@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 import numpy as np
@@ -237,6 +237,22 @@ def load_params(catalog: pd.DataFrame, building_id: str) -> dict:
     return json.loads(row.iloc[0]["params_json"])
 
 
+#: Source weather carries its provider's column names; `prepare_disturbances` works in I4B's.
+#: One mapping at the read boundary, so the stricter contract downstream has exactly one place
+#: that satisfies it.
+REFERENCE_WEATHER_COLUMNS = {
+    "temperature_2m_C": "T_amb",
+    "ghi_W_m2": "ghi",
+    "dni_W_m2": "dni",
+    "dhi_W_m2": "dhi",
+}
+
+
+def read_reference_weather(path: str | Path) -> pd.DataFrame:
+    """Read a normalized weather reference file into the columns `prepare_disturbances` wants."""
+    return pd.read_parquet(path).rename(columns=REFERENCE_WEATHER_COLUMNS)
+
+
 def prepare_disturbances(
     weather: pd.DataFrame,
     building_params: Mapping,
@@ -292,6 +308,11 @@ def prepare_disturbances(
         {
             "T_amb": source["T_amb"].astype("float32"),
             "Qdot_gains": (solar + internal["Qdot_tot"]).astype("float32"),
+            # the irradiance the gains were computed from, kept because the `realistic` view is
+            # defined in raw-weather space and its forecasts need these channels
+            "ghi": source["ghi"].astype("float32"),
+            "dni": source["dni"].astype("float32"),
+            "dhi": source["dhi"].astype("float32"),
         },
         index=source.index,
     )
@@ -339,12 +360,24 @@ def select_forecast_disturbances(
     horizon_steps: int,
     current_disturbance: np.ndarray,
     *,
+    channels: Sequence[str] = ("T_amb", "Qdot_gains"),
     delta_t: int = 900,
     availability_delay_hours: float = 6.0,
     correction_fraction: float = 0.5,
     correction_decay_hours: float = 6.0,
 ) -> np.ndarray:
-    """Select the latest as-of run that covers a complete MPC horizon."""
+    """Select the latest as-of run that covers a complete MPC horizon.
+
+    `channels` are the disturbance channels the caller's view declares, and the returned array
+    has one column per channel. Assuming the `perfect` view's two here is what made
+    `realistic` + `use_forecast` unrunnable.
+    """
+    channels = list(channels)
+    if len(current_disturbance) != len(channels):
+        raise ValueError(
+            f"current_disturbance has {len(current_disturbance)} entries "
+            f"but {len(channels)} channels were requested"
+        )
     if horizon_steps < 0:
         raise ValueError("horizon_steps must be non-negative")
     if availability_delay_hours < 0:
@@ -369,7 +402,7 @@ def select_forecast_disturbances(
         # last published forecast is causal; using realized future weather is not.
         selected = selected.ffill()
         if not selected.isna().any().any():
-            values = selected[["T_amb", "Qdot_gains"]].to_numpy(copy=True)
+            values = selected[channels].to_numpy(copy=True)
             error = float(current_disturbance[0] - values[0, 0])
             lead_hours = np.arange(len(target)) * delta_t / 3600
             values[:, 0] += (

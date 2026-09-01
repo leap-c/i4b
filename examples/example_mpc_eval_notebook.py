@@ -51,7 +51,7 @@ def _(Path, dataset_input):
     if str(eval_dir) not in sys.path:
         sys.path.insert(0, str(eval_dir))
 
-    from i4b.evaluation import load_dataset
+    from i4b_bench import load_dataset
 
     dataset = load_dataset(Path(dataset_input.value).expanduser())
     scenarios = dataset.scenarios
@@ -98,7 +98,7 @@ def _(horizon_select, mo, steps_select):
 
 @app.cell
 def _(dataset, mo, scenario_select):
-    from i4b.benchmark import load_params
+    from i4b_bench.corpus import load_params
     from i4b.models.model_buildings import Building
     import i4b.models.model_hvac as model_hvac
     from i4b.controller.mpc.casadi_framework import MPC_solver
@@ -174,7 +174,7 @@ def _(
     n_steps,
     scenario_id,
 ):
-    from i4b.evaluation import run_evaluation
+    from i4b_bench import run_evaluation
 
     mo.status.spinner(title="Running MPC evaluation...")
 

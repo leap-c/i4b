@@ -19,12 +19,12 @@ from pathlib import Path
 import numpy as np
 
 import i4b.models.model_hvac as model_hvac
-from i4b.benchmark import load_params
+from i4b_bench.corpus import load_params
 from i4b.models.model_buildings import Building
 from i4b.controller.mpc.casadi_framework import MPC_solver
 
-from i4b.evaluation import load_dataset
-from i4b.evaluation import run_evaluation
+from i4b_bench import load_dataset
+from i4b_bench import run_evaluation
 
 
 def make_mpc_controller(building_params: dict, horizon: int = 12):
