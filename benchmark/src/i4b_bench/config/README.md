@@ -65,7 +65,7 @@ The two sets differ in what they cost, not in what they measure:
 | set | open loop | closed loop |
 | --- | --- | --- |
 | `fast_eval` | 1 building, 3 windows, 1 context length | 1 building, 1 day |
-| `benchmark` | 30 buildings x 20 windows x 4 context lengths = 2,400 rows | 10 buildings, 14 days each |
+| `benchmark` | 30 buildings x 4 windows x 2 controllers x 4 contexts = 960 rows | 10 buildings, 14 days each |
 
 The two loops scale different things because they cost differently. An open-loop window is a few
 plant rollouts, so sampling more of them is nearly free and is the only way to get error bars on
@@ -74,14 +74,29 @@ controller is ~2 s — a year across 30 buildings is over 500 hours. Episodes ar
 the closed-loop set is meant to be distributed. Its ten starts are spread through the year, since
 a controller that handles January is not thereby known to handle a shoulder season.
 
-The open-loop set cycles the seven MPC-derived controllers, so the same building appears under
-nominal, offset and APRBS-excited histories. How much the control moved in the context is the
-strongest predictor of whether a model can identify the dynamics from it, and `excitation` is a
-column in the results for exactly that reason. The corpus also holds four `open-loop-aprbs-<n>K`
-excitation levels; those are training data, not problem instances, and no setting names them.
+The open-loop set uses **two** controllers, `mpc-nominal` and `open-loop-aprbs`, because measured
+zero-shot they span almost the whole range of control response on their own — gain 0.15 → 0.44
+across the context ladder under the first against 0.89 → 0.99 under the second. An MPC's action is
+a function of the state it is reacting to, so its effect is confounded with the state; an
+open-loop APRBS is not. The five intermediate MPC excitations landed between those two and cost
+five sevenths of the runtime to say so. The corpus also holds four `open-loop-aprbs-<n>K` levels;
+those are training data, not problem instances, and no setting names them.
+
+Every window sits in **December to February**. A probe cannot move a room whose pump is off, and
+pump activity across the test split runs 66 / 75 / 62 % of steps in those months against 2 % in
+June–August. Spreading windows through the year left a fifth of them unable to measure control
+response at all; in the heating season that falls to 0.4 %, and the plant's response to a probe
+roughly triples, so the same number of windows buys a far quieter estimate.
 
 Each window also names a time of day, dealt round-robin within each controller over eight slots
 three hours apart, so excitation is not confounded with the thermal regime a window starts in.
+120 windows per controller give a standard error near 0.016 on mean gain.
+
+All four context lengths are kept because each is informative on at least one metric: 1 d and 2 d
+are redundant for gain (paired t = 0.6) but well separated on accuracy (t = −5.9), while 5 d and
+21 d are the reverse (gain t = 4.1, accuracy t = −2.8). They are also nearly free — the plant is
+driven once per window at the longest context, and the shorter rungs are a slice of that history
+rather than another set of rollouts.
 
 ## Scenario identifiers
 

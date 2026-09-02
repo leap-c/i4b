@@ -47,6 +47,7 @@ from .open_loop_eval import (
     Window,
     eval_benchmark_open_loop,
     eval_scenario_open_loop,
+    inspect_window,
     open_loop_setting,
 )
 from .scenario_env import ScenarioEnv
@@ -71,6 +72,7 @@ __all__ = [
     "eval_benchmark_closed_loop",
     "eval_benchmark_open_loop",
     "eval_scenario_open_loop",
+    "inspect_window",
     "eval_scenario_closed_loop",
     "open_loop_setting",
     "closed_loop_setting",

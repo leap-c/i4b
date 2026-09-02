@@ -152,15 +152,15 @@ def eval_benchmark_open_loop(
     _check_split(dataset, setting)
 
     horizon = round(setting.horizon_hours * 4)
+    longest = round(max(setting.context_days) * PER_DAY)
     # Group by building so a worker prepares each building's forecast runs once, not per window.
     ordered = sorted(setting.scenarios.items(), key=lambda kv: (kv[1].building, kv[0]))
-    jobs = [
-        (round(days * PER_DAY), ordered[start : start + batch_size], days)
-        for days in setting.context_days
-        for start in range(0, len(ordered), batch_size)
-    ]
+    batches = [ordered[i : i + batch_size] for i in range(0, len(ordered), batch_size)]
 
-    rows = []
+    # The plant is driven once per window, at the longest context. Nothing about the probes
+    # depends on the context length -- same anchor, same plans, same weather -- and a shorter
+    # history is exactly the tail of a longer one, so the other rungs are a slice rather than
+    # another set of rollouts.
     if workers > 1:
         from concurrent.futures import ProcessPoolExecutor
 
@@ -168,14 +168,17 @@ def eval_benchmark_open_loop(
             max_workers=workers, initializer=_init_worker, initargs=(dataset,)
         ) as pool:
             futures = [
-                pool.submit(_roll_in_worker, setting, batch, context, horizon, days)
-                for context, batch, days in jobs
+                pool.submit(_roll_in_worker, setting, batch, longest, horizon) for batch in batches
             ]
-            for future in futures:
-                rows += _score(future.result(), predictor)
+            rolled = [future.result() for future in futures]
     else:
-        for context, batch, days in jobs:
-            rows += _score(_roll(dataset, setting, batch, context, horizon, days), predictor)
+        rolled = [_roll(dataset, setting, batch, longest, horizon) for batch in batches]
+
+    rows = []
+    for days in setting.context_days:
+        context = round(days * PER_DAY)
+        for prepared in rolled:
+            rows += _score([_at_context(item, context, days) for item in prepared], predictor)
     frame = pd.DataFrame(rows)
     frame["excitation"] = frame["excitation"].astype(EXCITATION_DTYPE)
     return frame
@@ -214,8 +217,9 @@ def eval_scenario_open_loop(
     days = context_days if context_days is not None else setting.context_days[0]
     horizon = round(setting.horizon_hours * 4)
     batch = [(f"{window.building}@{window.start}", window)]
-    prepared = _roll(dataset, setting, batch, round(days * PER_DAY), horizon, days)
-    return _score(prepared, predictor)[0]
+    context = round(days * PER_DAY)
+    prepared = _roll(dataset, setting, batch, context, horizon)
+    return _score([_at_context(item, context, days) for item in prepared], predictor)[0]
 
 
 _WORKER_DATASET: BenchmarkDataset | None = None
@@ -227,11 +231,21 @@ def _init_worker(dataset: BenchmarkDataset) -> None:
     _WORKER_DATASET = dataset
 
 
-def _roll_in_worker(setting, batch, context, horizon, days) -> list[dict]:
-    return _roll(_WORKER_DATASET, setting, batch, context, horizon, days)
+def _roll_in_worker(setting, batch, context, horizon) -> list[dict]:
+    return _roll(_WORKER_DATASET, setting, batch, context, horizon)
 
 
-def _roll(dataset, setting, batch, context, horizon, days) -> list[dict]:
+def _at_context(item: dict, context: int, days: float) -> dict:
+    """The same rollout, seen through a shorter history. Verified equal to rolling at `context`."""
+    history = {name: values[-context:] for name, values in item["observation"]["history"].items()}
+    return {
+        **item,
+        "observation": {**item["observation"], "history": history},
+        "meta": {**item["meta"], "context_days": days},
+    }
+
+
+def _roll(dataset, setting, batch, context, horizon) -> list[dict]:
     """Drive the plant for one batch of windows: the observation, the probes, the responses.
 
     The plant half of scoring, and the expensive one. It needs no predictor, so it is what a
@@ -242,7 +256,7 @@ def _roll(dataset, setting, batch, context, horizon, days) -> list[dict]:
         anchor = step_of(dataset, window.building, window.start)
         trajectory = load_controller_data(dataset, window.controller, window.building)
         if anchor < context or anchor + horizon >= len(trajectory):
-            raise ValueError(f"{name}: {window.start} leaves no room for {days} d of context")
+            raise ValueError(f"{name}: {window.start} leaves no room for {context} steps")
 
         env = ScenarioEnv(
             window.building,
@@ -265,22 +279,37 @@ def _roll(dataset, setting, batch, context, horizon, days) -> list[dict]:
             np.random.default_rng(anchor), nominal, setting.probe_amplitude, setting.probes
         )
         rolled = np.empty((len(plans), horizon), dtype=float)
+        # What the plant applied, which is not what was requested: `check_hp` collapses the
+        # supply temperature whenever the pump idles. The predictor is asked about the applied
+        # sequence, because that is the intervention its response is compared against. Handing
+        # it the requested one instead inflates gain by the reciprocal of the realized
+        # fraction -- about 2.5x on this corpus.
+        applied = np.empty_like(rolled)
         for k, plan in enumerate(plans):
             env.reset()
             for t, action in enumerate(plan):
                 _, _, _, _, info = env.step(float(action))
                 rolled[k, t] = info["T_room"]
+                applied[k, t] = info["u"]
 
+        requested_spread = float(plans.std(axis=0).mean())
         prepared.append(
             {
                 "observation": observation,
-                "plans": plans,
+                "plans": applied,
+                "requested": plans,
                 "actual": rolled,
                 "meta": {
                     "window": name,
                     "controller": window.controller,
                     "start": str(window.start),
-                    "context_days": days,
+                    # How much of the probe the actuator let through; 0 means the pump never
+                    # moved, so the window carries no control-response information.
+                    "realized_share": (
+                        float(applied.std(axis=0).mean()) / requested_spread
+                        if requested_spread > 0
+                        else 0.0
+                    ),
                     **scenario_metadata(dataset, window.building),
                 },
             }
@@ -321,6 +350,64 @@ def _score(prepared: list[dict], predictor: Predictor) -> list[dict]:
             }
         )
     return rows
+
+
+def inspect_window(
+    window: Window,
+    predictor: Predictor,
+    *,
+    dataset: BenchmarkDataset | None = None,
+    dataset_dir=None,
+    setting: OpenLoopBenchmark | None = None,
+    context_days: float | None = None,
+) -> dict:
+    """Everything one window's scoring saw, for looking at rather than aggregating.
+
+    Returns the context handed over, the probes as requested and as the actuator applied them,
+    the plant's response, the model's prediction, and the row those produce. `eval_*` reduce all
+    of this to four numbers; this is what to plot when one of them looks wrong.
+
+    Parameters
+    ----------
+    window : Window
+        The window to inspect.
+    predictor : Predictor
+        Called once, on this window alone.
+    dataset, dataset_dir, setting
+        As for `eval_benchmark_open_loop`.
+    context_days : float, optional
+        Context length. Defaults to the setting's longest.
+
+    Returns
+    -------
+    dict
+        ``history`` and ``forecast`` frames, ``requested`` and ``applied`` probe arrays
+        `(probes, horizon)`, ``actual`` and ``predicted`` room temperatures of the same shape,
+        the horizon ``timestamps``, and the scored ``row``.
+    """
+    setting = setting or open_loop_setting()
+    if dataset is None:
+        dataset = load_dataset(dataset_dir)
+    days = context_days if context_days is not None else max(setting.context_days)
+    context, horizon = round(days * PER_DAY), round(setting.horizon_hours * 4)
+    name = f"{window.building}@{window.start}"
+    item = _at_context(
+        _roll(dataset, setting, [(name, window)], context, horizon)[0], context, days
+    )
+
+    prediction = predictor([item["observation"]], [item["plans"]])[0]
+    row = _score([item], lambda _o, _c: [prediction])[0]
+    observation = item["observation"]
+    return {
+        "history": pd.DataFrame(observation["history"]).set_index("timestamp"),
+        "forecast": pd.DataFrame(observation["forecast"]).set_index("timestamp"),
+        "requested": item["requested"],
+        "applied": item["plans"],
+        "actual": item["actual"],
+        "predicted": np.asarray(prediction[SCORED_CHANNEL], dtype=float),
+        "timestamps": pd.DatetimeIndex(observation["forecast"]["timestamp"]),
+        "row": row,
+    }
 
 
 def _check_split(dataset, setting) -> None:
