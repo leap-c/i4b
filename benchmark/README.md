@@ -48,6 +48,20 @@ Predictor:  (observations: list[dict], controls: list[np.ndarray]) -> list[dict[
 Controller: (observation: dict) -> tuple[float, dict | None]
 ```
 
+Both are plain callables — there is no base class to inherit. A controller reads the observation
+and returns a supply temperature, optionally with the plan it had in mind:
+
+```python
+def thermostat(observation):
+    too_cold = observation["state"]["T_room"] < 21.0
+    return (45.0 if too_cold else 25.0), None
+
+eval_benchmark_closed_loop(thermostat)
+```
+
+`notebooks/mpc_eval.py` does the same with i4b's CasADi MPC, which is the interesting case: it
+shows how a planner that re-solves each step is wrapped into this signature.
+
 ## Layout
 
 ```
@@ -66,10 +80,10 @@ data/                 the dataset and everything that builds it -- see data/READ
   scripts/              the build pipeline
   source/               TABULA workbooks and downloaded weather -- fetched, gitignored
   corpus/               the built dataset -- generated, gitignored
-examples/             a worked controller, run end to end
 specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is
                       measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
-notebooks/            marimo notebooks over the corpus and its source data
+notebooks/            marimo notebooks over the corpus, its source data, and a worked
+                      MPC controller run end to end (mpc_eval.py)
 tests/                the contract: the import boundary, the views, gain calibration, leakage
 ```
 
