@@ -1,4 +1,6 @@
 # One building, one winter day. For CI, and for checking a controller runs at all.
+#
+# `start` and `end` are dates (midnight UTC) or datetimes on the corpus' 15-minute grid.
 
 common:
   split: test

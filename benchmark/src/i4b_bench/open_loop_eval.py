@@ -1,18 +1,14 @@
 """Open-loop evaluation: how well does a model predict, and does it respond to the control?
 
-The closed-loop side asks a controller to act; this side asks a model to predict. Both are handed
-the same observation, so a model written for one works in the other unchanged. The difference is
-that a predictor is also handed *candidate control trajectories* -- prediction here is a question
-about an intervention, and the control is what is intervened on.
-
-The unit is a window: one building, one date, and the recorded run whose history fills the
-context. Each is named in the setting, so the harness executes rather than chooses.
+A predictor gets the same observation a controller gets in the closed loop, plus candidate
+control trajectories to predict under. The unit is a window: one building, one date, and the
+recorded run whose history fills the context.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Protocol
 
@@ -36,23 +32,18 @@ from .scenario_env import ScenarioEnv
 
 CONFIG = Path(__file__).parent / "config" / "open_loop"
 
-#: The channel the metrics are computed on. A predictor may return more; anything else is ignored,
-#: and one that omits this is an error rather than a silent zero.
+#: The channel the metrics are computed on. A predictor may return more; omitting it is an error.
 SCORED_CHANNEL = "T_room"
 
-#: A window whose probes moved the room less than this in RMS carries no information about control
-#: response -- the pump was clipped or idle throughout, so every probe produced the same
-#: trajectory. Reporting a ratio there yields arbitrarily large nonsense.
+#: Minimum RMS room response, in K, for a window's gain to be reported. Below it the probes moved
+#: the plant too little to divide by -- the pump was clipped or idle throughout.
 MIN_RESPONSE_K = 1e-3
 
 
 class Predictor(Protocol):
     """A batch of observations with their candidate controls, in; predictions out.
 
-    `controls[i]` is `(k, horizon)`, and `returns[i]` maps a channel name to a `(k, horizon)`
-    array. Naming the channels rather than returning a positional block means a model predicting
-    one channel and one predicting five need no different handling, and no caller can get the
-    ordering backwards.
+    `controls[i]` is `(k, horizon)`; `returns[i]` maps a channel name to a `(k, horizon)` array.
     """
 
     def __call__(
@@ -62,10 +53,13 @@ class Predictor(Protocol):
 
 @dataclass(frozen=True)
 class Window:
-    """One problem instance: a building, a date, and whose recorded run fills the context."""
+    """One problem instance: a building, when it starts, and whose run fills the context."""
 
     building: str
-    date: date
+    #: Where the horizon begins. A date means midnight UTC; a datetime names any time on the
+    #: corpus' 15-minute grid.
+    start: date | datetime
+    #: The recorded run whose history seeds the context.
     controller: str
 
 
@@ -77,19 +71,29 @@ class OpenLoopBenchmark:
     view: str
     use_forecast: bool
     horizon_hours: float
-    #: Context lengths to sweep. The same window at one day and at three weeks is one window
-    #: under two conditions, so this is a column in the results rather than part of a window.
+    #: Context lengths to sweep. Every window is run at each, and it becomes a results column.
     context_days: tuple[float, ...]
     probes: int
     probe_amplitude: float
-    #: Zero, unlike the closed loop: forecast error is what this measures, so pulling the
-    #: forecast toward the current sensor reading would correct away the thing under test.
+    #: How far an archived forecast is pulled toward the current sensor reading, in [0, 1]. Zero
+    #: here: forecast error is part of what this measures.
     forecast_correction: float
     scenarios: dict[str, Window]
 
 
 def open_loop_setting(name: str = "benchmark") -> OpenLoopBenchmark:
-    """Load a named setting from `config/open_loop/<name>.yaml`."""
+    """Load a named setting from `config/open_loop/<name>.yaml`.
+
+    Parameters
+    ----------
+    name : str
+        Setting stem, e.g. ``"benchmark"`` or ``"fast_eval"``.
+
+    Returns
+    -------
+    OpenLoopBenchmark
+        The `common` block plus one `Window` per named scenario.
+    """
     path = CONFIG / f"{name}.yaml"
     if not path.exists():
         have = sorted(p.stem for p in CONFIG.glob("*.yaml"))
@@ -111,13 +115,29 @@ def eval_benchmark_open_loop(
 ) -> pd.DataFrame:
     """Score a predictor on the open-loop benchmark.
 
-    Runs every window in the setting at every context length, asking two things of each: does the
-    prediction track the building, and does it move when the control moves. A model can do the
-    first while failing the second, which makes it useless inside a controller.
+    Runs every window at every context length in the setting.
 
-    Returns one row per window and context length. `gain` is the slope of the model's predicted
-    deviation on the plant's, over counterfactual probes: 1.0 moves exactly as the plant does,
-    0.0 ignores the control. Windows whose probes barely moved the room report `NaN`.
+    Parameters
+    ----------
+    predictor : Predictor
+        Called once per batch as ``predictor(observations, controls)``; see `Predictor`.
+    dataset : BenchmarkDataset, optional
+        An already-loaded corpus. Loaded from `dataset_dir` when omitted.
+    dataset_dir : str or Path, optional
+        Corpus directory. Defaults to the bundled `production/`.
+    setting : OpenLoopBenchmark, optional
+        What to run. Defaults to `open_loop_setting("benchmark")`.
+    batch_size : int
+        Windows per predictor call. Trades peak memory against call overhead.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per window and context length, with `mae_K` and `bias_K` (point accuracy on the
+        nominal plan), `response_K` (RMS movement the probes produced in the plant), `gain`, and
+        the window's provenance. `gain` is the slope of the model's predicted deviation on the
+        plant's over the probes: 1.0 moves as the plant does, 0.0 ignores the control, `NaN`
+        when `response_K` fell below `MIN_RESPONSE_K`.
     """
     setting = setting or open_loop_setting()
     if dataset is None:
@@ -147,15 +167,28 @@ def eval_scenario_open_loop(
 ) -> dict:
     """Score a predictor on one window, at one context length.
 
-    Returns the row `eval_benchmark_open_loop` would have produced for it. Useful for debugging a
-    predictor against a single building; the benchmark number is the benchmark-level function.
+    Parameters
+    ----------
+    window : Window
+        The building, date and history-seeding controller to score on.
+    predictor : Predictor
+        As for `eval_benchmark_open_loop`.
+    dataset, dataset_dir, setting
+        As for `eval_benchmark_open_loop`.
+    context_days : float, optional
+        Context length. Defaults to the setting's first.
+
+    Returns
+    -------
+    dict
+        The row `eval_benchmark_open_loop` would have produced for this window.
     """
     setting = setting or open_loop_setting()
     if dataset is None:
         dataset = load_dataset(dataset_dir)
     days = context_days if context_days is not None else setting.context_days[0]
     horizon = round(setting.horizon_hours * 4)
-    batch = [(f"{window.building}@{window.date}", window)]
+    batch = [(f"{window.building}@{window.start}", window)]
     return _score(dataset, setting, batch, round(days * PER_DAY), horizon, predictor, days)[0]
 
 
@@ -163,10 +196,10 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
     """Roll the plant for one batch of windows, ask the predictor once, and score."""
     observations, controls, realised, meta = [], [], [], []
     for name, window in batch:
-        anchor = step_of(dataset, window.building, window.date)
+        anchor = step_of(dataset, window.building, window.start)
         trajectory = load_controller_data(dataset, window.controller, window.building)
         if anchor < context or anchor + horizon >= len(trajectory):
-            raise ValueError(f"{name}: {window.date} leaves no room for {days} d of context")
+            raise ValueError(f"{name}: {window.start} leaves no room for {days} d of context")
 
         env = ScenarioEnv(
             window.building,
@@ -198,7 +231,7 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
             {
                 "window": name,
                 "controller": window.controller,
-                "date": str(window.date),
+                "start": str(window.start),
                 "context_days": days,
                 **scenario_metadata(dataset, window.building),
             }
@@ -235,11 +268,7 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
 
 
 def _check_split(dataset, setting) -> None:
-    """Every named building must belong to the declared split.
-
-    Otherwise `split` would be inert, and a training building pasted into a held-out set would
-    quietly produce a number nobody can trust.
-    """
+    """Every named building must belong to the declared split."""
     available = set(evaluation_scenarios(dataset, setting.split))
     stray = sorted({w.building for w in setting.scenarios.values()} - available)
     if stray:

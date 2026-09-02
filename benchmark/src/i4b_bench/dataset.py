@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 from typing import NamedTuple
@@ -21,10 +22,8 @@ from .observation import (
 STEP = pd.Timedelta(minutes=15)
 PER_DAY = 96
 
-#: How hard each controller drives the supply temperature, from MPC left alone to a pure
-#: open-loop campaign. The MPC offsets shift the comfort bound, not the excitation. Ordered, so
-#: any frame carrying the label sorts and groups from least to most excited without a caller
-#: having to remember an ordering.
+#: How hard each controller drives the supply temperature. The MPC offsets shift the comfort
+#: bound, not the excitation. An ordered dtype, so labelled frames sort least- to most-excited.
 EXCITATION = {
     "mpc-nominal": "none",
     "mpc-offset-plus-2K": "none",
@@ -108,14 +107,23 @@ def evaluation_scenarios(
 ) -> list[str]:
     """Scenario ids belonging to a split, sorted.
 
-    The corpus already decides which buildings are held out -- ``split.parquet`` assigns whole
-    building families, and the test split is period B of families that appear nowhere in
-    training. Deriving the evaluation set from it keeps closed-loop results comparable with
-    open-loop ones and removes the need for anyone to agree on a hand-picked list.
+    ``split.parquet`` assigns whole building families, so a family held out of training is held
+    out in every refurbishment state and weather year.
 
-    ``limit`` takes an evenly spaced subset rather than a prefix. Scenario ids sort by
-    country, so the first ten of the test split are three countries out of seven; spacing
-    them keeps a short run representative of the whole set.
+    Parameters
+    ----------
+    dataset : BenchmarkDataset
+        The corpus to read the split from.
+    split : {"train", "validation", "test"}
+        Which split to return.
+    limit : int, optional
+        Return an evenly spaced subset of this size rather than a prefix. Scenario ids sort by
+        country, so a prefix would be a few countries and a spaced subset is representative.
+
+    Returns
+    -------
+    list of str
+        Sorted scenario ids.
     """
     # TODO: verify that scenarios from right split are loaded? And format trajectory_id.
     trajectories = dataset.trajectories[["trajectory_id", "scenario_id"]]
@@ -131,10 +139,22 @@ def evaluation_scenarios(
 def load_controller_data(
     dataset: BenchmarkDataset, controller_id: str, scenario_id: str
 ) -> pd.DataFrame:
-    """Load a single controller's trajectory for a given scenario.
+    """Load one controller's recorded trajectory for one scenario.
 
-    Joins with exogenous data to include T_amb and Qdot_gains alongside
-    the controller's state and action columns.
+    Parameters
+    ----------
+    dataset : BenchmarkDataset
+        The corpus to read from.
+    controller_id : str
+        Recorded controller, e.g. ``"mpc-nominal"``.
+    scenario_id : str
+        The building, e.g. ``"BG.N.SFH.02.Gen.ReEx.001.001--period_b"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The controller's states and actions, timestamp-sorted, joined with the scenario's
+        exogenous channels.
     """
     path = dataset.controllers_dir / f"{controller_id}.parquet"
     frame = pd.read_parquet(path, filters=[("scenario_id", "==", scenario_id)])
@@ -150,6 +170,7 @@ def load_controller_data(
 
 
 def utc(value) -> pd.Timestamp:
+    """`value` as a UTC timestamp; naive values are read as UTC rather than local time."""
     value = pd.Timestamp(value)
     return value.tz_localize("UTC") if value.tzinfo is None else value.tz_convert("UTC")
 
@@ -162,8 +183,19 @@ def aligned(frame: pd.DataFrame, view: ObsView) -> pd.DataFrame:
     documents, applied to a corpus read instead of a rolling buffer -- and it takes a view for
     the same reason, so a corpus-built history carries exactly the channels the env would build.
 
-    The frame must already carry the view's channels. A corpus transition frame satisfies
-    `perfect` as read; `realistic` needs the irradiance joined on from `exogenous.parquet` first.
+    Parameters
+    ----------
+    frame : pandas.DataFrame
+        Timestamp-indexed transitions. Must already carry the view's channels: a corpus
+        transition frame satisfies `perfect` as read, while `realistic` needs the irradiance
+        joined on from `exogenous.parquet` first.
+    view : {"perfect", "realistic"}
+        Which channels the result carries.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row shorter than `frame`; the first has no preceding input to pair with.
     """
     inputs = [*CONTROL_CHANNELS, *DISTURBANCE_CHANNELS[view]]
     return frame[list(STATE_CHANNELS[view])].join(frame[inputs].shift(1)).iloc[1:]
@@ -202,7 +234,24 @@ def read_window(
     *,
     cache_path: Path | None = None,
 ) -> pd.DataFrame:
-    """One trajectory between two timestamps, tz dropped -- several model libraries reject it."""
+    """One trajectory between two timestamps, inclusive.
+
+    Parameters
+    ----------
+    root : Path
+        Corpus directory holding `transitions/`.
+    trajectory_id : str
+        ``"<building>--<period>--<controller>"``.
+    start, end : pandas.Timestamp
+        Bounds, inclusive. Naive values are read as UTC.
+    cache_path : Path, optional
+        Where to memoise the shard index; see `shard_index`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Timestamp-indexed, with the timezone dropped -- several model libraries reject it.
+    """
     shard = Path(root) / "transitions" / shard_index(Path(root), cache_path)[trajectory_id]
     table = ds.dataset(shard).to_table(
         filter=(pc.field("trajectory_id") == trajectory_id)
@@ -214,22 +263,43 @@ def read_window(
     return frame
 
 
-def step_of(dataset, scenario_id: str, when) -> int:
-    """The step index of a timestamp within a scenario, so configuration can speak in dates.
+def step_of(dataset, scenario_id: str, when: date | datetime | str) -> int:
+    """The step index of a timestamp within a scenario, so configuration can speak in time.
 
-    A step index depends on where a period happens to start; a date does not, and a reader can
-    tell at a glance whether a run lands in the heating season.
+    A step index depends on where a period happens to start; a timestamp does not, and a reader
+    can tell at a glance whether a run lands in the heating season.
+
+    Parameters
+    ----------
+    dataset : BenchmarkDataset
+        The corpus whose clock `when` is resolved against.
+    scenario_id : str
+        The building whose period defines step zero.
+    when : datetime.date, datetime.datetime, or str
+        A date is midnight UTC; a datetime may name any time on the corpus' 15-minute grid.
+        Naive values are read as UTC.
+
+    Returns
+    -------
+    int
+        Steps from the scenario's start.
+
+    Raises
+    ------
+    ValueError
+        If `when` precedes the scenario, or does not land on a step boundary.
     """
     row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
     if row.empty:
         raise KeyError(f"unknown scenario {scenario_id!r}")
     start = pd.Timestamp(row.iloc[0]["start_time_utc"])
-    when = pd.Timestamp(when)
-    if when.tzinfo is None:
-        when = when.tz_localize("UTC")
-    step = int((when - start) / STEP)
+    when = utc(when)
+    offset = when - start
+    if offset % STEP != pd.Timedelta(0):
+        raise ValueError(f"{when} is not on the {STEP} grid that {scenario_id} runs on")
+    step = int(offset / STEP)
     if step < 0:
-        raise ValueError(f"{when.date()} is before {scenario_id} begins ({start.date()})")
+        raise ValueError(f"{when} is before {scenario_id} begins ({start})")
     return step
 
 
@@ -260,8 +330,7 @@ def scenario_metadata(dataset, scenario_id: str) -> dict:
         "building_id": row["building_id"],
         "country": row["country_code"],
         "period_id": row["period_id"],
-        # the refurbishment variant, and the transmission it implies: the same house
-        # unrenovated and fully renovated are very different control problems
+        # the refurbishment variant, and the transmission it implies
         "variant": int(building["variant_number"]),
         "transmission_W_m2K": float(building["transmission_W_m2K"]),
         "year_start": int(building["year_start"]),

@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,12 +33,11 @@ class Episode:
     """One problem instance: a building, the dates it runs between, and what seeded its history."""
 
     building: str
-    start: date
-    end: date
-    #: Whose recorded run fills the context handed over at the start. Excited rather than
-    #: nominal: the history then contains control variation the room actually responded to,
-    #: which is what makes the dynamics identifiable from it, and it is less of a head start for
-    #: controllers that happen to resemble the MPC that produced the state.
+    #: Bounds of the episode. A date means midnight UTC; a datetime names any time on the
+    #: corpus' 15-minute grid.
+    start: date | datetime
+    end: date | datetime
+    #: The recorded run whose history seeds the context at `start`.
     controller: str
 
 
@@ -50,17 +49,27 @@ class ClosedLoopBenchmark:
     view: str
     use_forecast: bool
     planning_horizon: int
-    #: Generous on purpose. The buffer costs only memory, and a context shorter than a method
-    #: wants silently penalises it -- a foundation model asking for three weeks got one day.
+    #: How much history the context holds. Sized for the most demanding method, since a shorter
+    #: context silently penalises anything that wanted more.
     context_days: float
-    #: A controller would correct an archived forecast against its own sensor, so unlike the
-    #: open loop this is not zero.
+    #: How far an archived forecast is pulled toward the current sensor reading, in [0, 1].
     forecast_correction: float
     scenarios: dict[str, Episode]
 
 
 def closed_loop_setting(name: str = "benchmark") -> ClosedLoopBenchmark:
-    """Load a named setting from `config/closed_loop/<name>.yaml`."""
+    """Load a named setting from `config/closed_loop/<name>.yaml`.
+
+    Parameters
+    ----------
+    name : str
+        Setting stem, e.g. ``"benchmark"`` or ``"fast_eval"``.
+
+    Returns
+    -------
+    ClosedLoopBenchmark
+        The `common` block plus one `Episode` per named scenario.
+    """
     path = CONFIG / f"{name}.yaml"
     if not path.exists():
         have = sorted(p.stem for p in CONFIG.glob("*.yaml"))
@@ -79,10 +88,25 @@ def eval_benchmark_closed_loop(
 ) -> pd.DataFrame:
     """Score a controller on the closed-loop benchmark.
 
-    Runs the controller on every scenario in the setting and reports what it cost: energy and
-    comfort. Unlike the open-loop side this cannot batch, since each action depends on the state
-    the last one produced -- so planning time is reported too, because a controller that wins on
-    comfort by thinking for a minute a step has not solved the problem.
+    Episodes run sequentially -- each action depends on the state the last one produced -- but
+    they are independent of one another, so a caller may distribute them.
+
+    Parameters
+    ----------
+    controller : callable
+        ``controller(observation) -> (action_celsius, plan_or_none)``.
+    dataset : BenchmarkDataset, optional
+        An already-loaded corpus. Loaded from `dataset_dir` when omitted.
+    dataset_dir : str or Path, optional
+        Corpus directory. Defaults to the bundled `production/`.
+    setting : ClosedLoopBenchmark, optional
+        What to run. Defaults to `closed_loop_setting("benchmark")`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per episode: `energy_kwh`, `comfort_violation_degree_hours`,
+        `planning_seconds_mean`, the dates run, and the building's provenance.
     """
     setting = setting or closed_loop_setting()
     if dataset is None:
@@ -137,16 +161,35 @@ def eval_scenario_closed_loop(
 ) -> dict[str, Any]:
     """Run a controller on one benchmark scenario, closed loop.
 
-    `controller` takes an observation and returns `(action_celsius, plan_or_none)`.
-    `initial_controller_id` names the recorded trajectory the history is seeded from, and
-    `use_forecast` chooses archived forecasts over the realised weather.
+    Parameters
+    ----------
+    scenario_id : str
+        The building to run, e.g. ``"BG.N.SFH.02.Gen.ReEx.001.001--period_b"``.
+    controller : callable
+        ``controller(observation) -> (action_celsius, plan_or_none)``. The plan is recorded but
+        not scored.
+    dataset_dir : str or Path, optional
+        Corpus directory. Defaults to the bundled `production/`.
+    dataset : BenchmarkDataset, optional
+        An already-loaded corpus. Loaded from `dataset_dir` when omitted.
+    initial_controller_id : str
+        Recorded trajectory whose history seeds the context.
+    max_context_length : int
+        Steps of history kept in the rolling buffer.
+    initial_context_length : int, optional
+        Steps of history seeded at reset. Defaults to `max_context_length`.
+    planning_steps : int
+        Forecast horizon handed over each step, in steps.
+    start_step : int, optional
+        Step index to start at. Defaults to the scenario's own start.
+    use_forecast : bool
+        Use archived forecast runs rather than the realised weather.
 
-    Returns energy, comfort violation, mean planning time, and the trajectory.
-
-    The controller may return a plan; nothing scores it. A plan's per-channel error is dominated
-    by weather -- the control accounts for a few percent of a room's daily movement -- so it does
-    not discriminate control quality. Scoring one wants a counterfactual: replay a *perturbed*
-    plan and compare the response, which is what `eval_scenario_open_loop` does.
+    Returns
+    -------
+    dict
+        `energy_kwh`, `comfort_violation_degree_hours`, `planning_seconds_mean`, and the
+        per-step `trajectory` frame.
     """
     if dataset is None:
         dataset = load_dataset(dataset_dir)

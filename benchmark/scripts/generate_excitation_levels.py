@@ -76,12 +76,10 @@ def _init_worker(root: str, dataset: str) -> None:
 def _published_disturbances(scenario_id: str) -> pd.DataFrame:
     """The disturbances the corpus recorded for this scenario, not a fresh derivation of them.
 
-    Re-deriving from raw weather is what made the first attempt at these levels unusable: the
-    corpus was built before `prepare_disturbances` gained interpolated ambient and local-time
-    internal gains, so a re-derivation disagreed with `exogenous.parquet` by up to 6.0 K and
-    168.6 W, and moved the scored channel by as much as the benchmark's entire MAE range. Reading
-    the record instead makes a trajectory consistent with the corpus it is appended to by
-    construction, whatever convention that corpus was built under.
+    `prepare_disturbances` has since changed how it resamples ambient and indexes internal gains,
+    so re-deriving would disagree with `exogenous.parquet`. Reading the record keeps an appended
+    trajectory consistent with the corpus whatever convention that corpus was built under; see
+    specs/IMPLICIT_ASSUMPTIONS.md.
     """
     frame = pd.read_parquet(
         _dataset / "exogenous.parquet",
@@ -95,8 +93,8 @@ def _published_disturbances(scenario_id: str) -> pd.DataFrame:
         {"T_amb": frame["T_amb"].to_numpy(), "Qdot_gains": frame["Qdot_gains"].to_numpy()},
         index=index,
     )
-    # `exogenous` holds one row per *step*; the plant reads one row past the last step, which is
-    # never recorded. Repeating the final row leaves every recorded step untouched.
+    # `exogenous` holds one row per step; the plant reads one row past the last, which is never
+    # recorded. Repeating the final row leaves every recorded step untouched.
     tail = published.iloc[[-1]].set_axis([index[-1] + (index[1] - index[0])])
     return pd.concat([published, tail]).astype("float32")
 

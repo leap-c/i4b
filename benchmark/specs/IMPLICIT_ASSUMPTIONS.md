@@ -56,19 +56,17 @@ than their own: 2–3 h late in Sofia and Nicosia, 1–2 h in most of the
 continent, 0–1 h in Dublin. Occupancy therefore does not line up with
 daylight or with the solar gain it should coincide with.
 
-**Risk:** low for scoring, real for transfer. `Qdot_gains` is a channel a
-model is *handed*, not one it must predict, so the phase shift leaves the
-learning problem entirely self-consistent — the room responds to the gains,
-and the model sees those gains. It is a realism defect, and it is the
-`perfect` view's covariate, so it would matter for sim-to-real transfer.
+**Risk:** low for scoring, real for transfer. `Qdot_gains` is a channel the
+`perfect` view *hands* a model rather than one it must predict, so the room
+responds to the gains the model sees and the learning problem stays
+self-consistent. It is a realism defect, and would matter for sim-to-real.
 
 **Enforced in code:** `scripts/generate_excitation_levels.py` reads
-`exogenous.parquet` rather than re-deriving disturbances, so anything
-appended to the corpus inherits the corpus' convention by construction.
-Any *new* generator that appends to an existing corpus must do the same.
-Re-deriving instead cost 0.187 K mean / 0.690 K max on the scored channel
-— the size of the benchmark's whole MAE range — the first time these
-levels were generated.
+`exogenous.parquet` rather than re-deriving disturbances, so an appended
+trajectory inherits the corpus' convention by construction. Any new
+generator appending to an existing corpus must do the same — re-deriving
+moves the scored channel by 0.187 K mean / 0.690 K max, the size of the
+benchmark's MAE range.
 
 **Clean-up path:** corpus v3, which means regenerating all 4,202
 trajectories including the 2,674 MPC ones through the external collector.

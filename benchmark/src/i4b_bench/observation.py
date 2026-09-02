@@ -1,16 +1,12 @@
 """What a model is allowed to see, and how it is handed over.
 
-The channel sets and the builder live together on purpose: the tuples say what a view exposes,
-and `build_observation` hands over exactly those. Both evaluations construct observations
-through this one function, so "the observation is the same in open and closed loop" is enforced
-rather than promised.
+Both evaluations build their observations through `build_observation`, so the two loops hand a
+model the same thing.
 
-A view is one answer to "what could you actually know here". `perfect` is the oracle: the
-building-specific heat gain the simulator used, and the wall node -- neither of which any site
-can instrument, but both of which make the dynamics fully observable. `realistic` is what an
-installation could be built to measure: raw weather, and the two temperatures a heat pump and a
-room sensor report. So the views differ in their disturbances *and* in how much of the state
-they expose, and the gap between a method's two scores is the price of the missing information.
+A view sets how much of the plant is visible. `perfect` is the oracle -- the wall node and the
+heat gain the simulator used, neither measurable on a real site, together making the dynamics
+fully observable. `realistic` is what an installation could instrument: raw weather, and the
+temperatures a heat pump and a room sensor report.
 """
 
 from __future__ import annotations
@@ -23,19 +19,17 @@ import numpy as np
 ObsView = Literal["perfect", "realistic"]
 
 #: The plant's state vector, in the plant's own order. Seeding a run and reading `env.state` go
-#: through this, so it is fixed regardless of what a view chooses to show.
+#: through this, independent of any view.
 PLANT_STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
 
 CONTROL_CHANNELS = ("T_hp_sup_applied",)
 
-#: What a learned model predicts. `T_wall` stays out even under `perfect`: it is scored on
-#: `T_room`, and a method free to predict the wall as well can still do so -- the channel is in
-#: its context, and nothing here caps what a returned dict may contain.
+#: What a learned model predicts. `T_wall` stays out under both views; a method may still return
+#: it, since nothing caps what the returned dict contains.
 TARGET_CHANNELS = ("T_room", "T_hp_ret")
 
-#: How much of the state each view exposes. `perfect` shows the wall node, which makes the 4R3C
-#: dynamics fully observable; a model there need not infer the thermal mass from its own history.
-#: `realistic` withholds it, because nothing measures a wall.
+#: How much of the state each view exposes. `realistic` withholds the wall node -- nothing
+#: measures a wall -- so a method there infers the thermal mass from its own history.
 STATE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
     "perfect": PLANT_STATE_CHANNELS,
     "realistic": ("T_room", "T_hp_ret"),
@@ -48,7 +42,18 @@ DISTURBANCE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
 
 
 def history_channels(view: ObsView) -> tuple[str, ...]:
-    """The channels a history row carries: state, the action that produced it, disturbances."""
+    """The channels a history row carries: state, the action that produced it, disturbances.
+
+    Parameters
+    ----------
+    view : {"perfect", "realistic"}
+        Which view's state and disturbance sets to combine.
+
+    Returns
+    -------
+    tuple of str
+        Column names, in a stable order.
+    """
     return STATE_CHANNELS[view] + CONTROL_CHANNELS + DISTURBANCE_CHANNELS[view]
 
 
@@ -59,10 +64,24 @@ def build_observation(
 ) -> dict:
     """Assemble the observation both evaluations hand to a model.
 
-    `state` is the current state, `history` carries past rows with each action aligned onto the
-    state it produced, and `forecast` the known future disturbances. Candidate future controls
-    are *not* here: open-loop passes them alongside, so the observation stays identical between
-    the two loops and reads as a description of what happened rather than of what to try.
+    Candidate future controls are not part of it -- open loop passes them alongside, so both
+    loops hand over the same thing.
+
+    Parameters
+    ----------
+    state : dict of str to float
+        The current state, holding this view's `STATE_CHANNELS`.
+    history : dict of str to numpy.ndarray
+        Past rows, each action aligned onto the state it produced, plus a `timestamp` array.
+        Keys are this view's `history_channels`.
+    forecast : dict of str to numpy.ndarray
+        Known future disturbances over the planning horizon, plus a `timestamp` array. Keys are
+        this view's `DISTURBANCE_CHANNELS`.
+
+    Returns
+    -------
+    dict
+        ``{"state": ..., "history": ..., "forecast": ...}``.
     """
     return {"state": state, "history": history, "forecast": forecast}
 

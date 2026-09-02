@@ -41,12 +41,34 @@ class ScenarioEnv:
 
     Parameters
     ----------
-    view : ``"perfect"`` | ``"realistic"``
-        Controls which disturbance channels are exposed to the agent.
-        ``"perfect"`` provides pre-computed ``(T_amb, Qdot_gains)``; ``"realistic"``
-        provides raw weather ``(T_amb, ghi, dni, dhi)`` without internal gains.
-    start_step : int | None
-        The timestep at which to start the evaluation (time-wise steps are determined by the scenario time discretization).
+    scenario_id : str
+        The building to run, e.g. ``"BG.N.SFH.02.Gen.ReEx.001.001--period_b"``.
+    dataset : BenchmarkDataset, optional
+        An already-loaded corpus. Loaded from `dataset_dir` when omitted.
+    dataset_dir : str or Path, optional
+        Corpus directory. Defaults to the bundled ``production/``.
+    initial_controller_id : str or None
+        Recorded trajectory whose history seeds the context and sets the starting state.
+        ``None`` starts from the plant's own reset, which is how new trajectories are generated.
+    max_context_length : int
+        Steps of history kept in the rolling buffer.
+    initial_context_length : int, optional
+        Steps of history seeded at reset. Defaults to `max_context_length`.
+    planning_steps : int
+        Forecast horizon handed over each step, in steps.
+    start_step : int, optional
+        Step index to start at, on the scenario's own 15-minute grid. See `step_of` to get one
+        from a timestamp. Defaults to the scenario's start.
+    use_forecast : bool
+        Use archived forecast runs rather than the realised weather.
+    view : {"perfect", "realistic"}
+        How much of the plant the observation exposes. ``"perfect"`` adds the wall node and the
+        pre-computed ``Qdot_gains``; ``"realistic"`` gives raw weather and omits the wall.
+    build_observation : bool
+        Assemble the observation dict each step. ``False`` skips the cost when only the
+        trajectory is wanted, as during generation.
+    forecast_correction : float
+        How far an archived forecast is pulled toward the current sensor reading, in [0, 1].
     """
 
     def __init__(
@@ -98,21 +120,16 @@ class ScenarioEnv:
             internal_gain_profile=str(internal_gain_profile()),
             building_params=self._building_params,
             disturbances=self._exogenous[["T_amb", "Qdot_gains"]].copy(),
-            # Pinned, not left to RoomHeatEnv's default. The corpus was integrated with the
-            # legacy backend, so evaluating against it with a different integrator would score
-            # controllers in a slightly different world than the recorded baselines they are
-            # compared to (measured: 6.4 mK worst case). It is also ~30x faster per step, which
-            # matters because the control-response metric rolls the plant once per probe.
+            # Pinned, not left to RoomHeatEnv's default: the corpus was integrated with the
+            # legacy backend, and evaluation must match the world the baselines were recorded in.
             backend="legacy",
         )
 
-        # Observations cost a dict of arrays per step. Generation discards them, and over
-        # 35,039 steps x 1,528 trajectories that is the difference between minutes and hours.
+        # Building an observation costs a dict of arrays per step; generation discards them.
         self._build_observations = build_observation
 
-        # The recorded trajectory seeds the history buffer -- and it is the *only* thing here
-        # that needs one, so `initial_controller_id=None` lets this environment generate the
-        # trajectories a corpus is made of rather than only replay them.
+        # The recorded trajectory seeds the history buffer, and is the only thing that needs
+        # one; `initial_controller_id=None` drives a fresh run instead of replaying.
         self._initial_trajectory = (
             None
             if initial_controller_id is None

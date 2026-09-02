@@ -19,13 +19,25 @@ go and look up. `scenarios` names the problem instances, one entry per instance:
 
 | loop | an entry is | fields |
 | --- | --- | --- |
-| open loop | a **window** | `building`, `date`, `controller` |
+| open loop | a **window** | `building`, `start`, `controller` |
 | closed loop | an **episode** | `building`, `start`, `end`, `controller` |
 
 `controller` names the recorded run whose history seeds the context — not the method under test,
-which is the argument you pass in. Dates are plain `YYYY-MM-DD`; PyYAML parses them to
-`datetime.date`, and the harness resolves each to a step index against the dataset's own clock, so
-a setting stays readable and stays valid if the corpus is regenerated at a different resolution.
+which is the argument you pass in.
+
+Times are written either as a plain date, meaning midnight UTC, or as a datetime naming any point
+on the corpus' 15-minute grid:
+
+```yaml
+start: 2025-10-10             # midnight UTC
+start: 2025-10-10 05:00:00    # an early-morning recovery
+start: 2026-02-01 17:30:00    # the evening peak
+```
+
+PyYAML parses these to `datetime.date` and `datetime.datetime`; the harness resolves each against
+the dataset's own clock, and rejects a time that does not land on a step boundary rather than
+silently rounding it down. Time of day matters: the same building on the same date behaves very
+differently anchored at an early-morning recovery than at an afternoon coast.
 
 ## What each view exposes
 

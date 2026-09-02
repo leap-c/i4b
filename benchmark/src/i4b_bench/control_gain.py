@@ -1,18 +1,15 @@
 """Does the model respond to the control the way the plant does?
 
-Accuracy and control response are close to unrelated on this corpus, and only the second one
-predicts closed-loop performance: a model can track room temperature well while barely reacting
-to the heat pump, which makes it useless inside a controller. So the benchmark measures both.
-
-The measurement is a counterfactual. From one anchor, drive the plant under several perturbed
-control trajectories -- same weather, same initial state, only the control differs -- and ask
-the model about each. Regress the model's predicted deviation on the plant's actual deviation:
+A counterfactual measurement, scored alongside point accuracy because a model can track room
+temperature well while barely reacting to the heat pump. From one anchor, drive the plant under
+several perturbed control trajectories -- same weather, same initial state, only the control
+differs -- and regress the model's predicted deviation on the plant's actual deviation:
 
     gain = 1.0   the model moves exactly as the plant does
     gain = 0.0   the model ignores the control entirely
 
-Rollouts go through `ScenarioEnv`, so probes inherit the same integrator, the same `check_hp`
-clipping and the same disturbances as the corpus and the closed loop.
+Rollouts go through `ScenarioEnv`, so probes inherit the corpus' integrator, clipping and
+disturbances.
 """
 
 from __future__ import annotations
@@ -34,9 +31,25 @@ def probe_plans(
 ) -> np.ndarray:
     """`count` control trajectories around `baseline`, clipped to the actuator's range.
 
-    `offset` shifts the whole horizon by a constant, which isolates the response from the
-    waveform. `aprbs` perturbs with held random steps, which excites more of the dynamics but
-    mixes timing into the answer.
+    Parameters
+    ----------
+    rng : numpy.random.Generator
+        Used only by `kind="aprbs"`; `offset` probes are deterministic.
+    baseline : numpy.ndarray
+        The nominal plan, shape `(horizon,)`, in degrees Celsius.
+    amplitude : float
+        Peak perturbation about the baseline, in Kelvin.
+    count : int
+        How many probes. At least two, since the metric is a slope.
+    kind : {"offset", "aprbs"}
+        `offset` shifts the whole horizon by a constant, spaced evenly over
+        ``[-amplitude, +amplitude]``. `aprbs` perturbs with held random steps, which excites
+        more of the dynamics but mixes timing into the answer.
+
+    Returns
+    -------
+    numpy.ndarray
+        Shape `(count, horizon)`, clipped to `BOUNDS`.
     """
     if count < 2:
         raise ValueError("a slope needs at least two probes")
@@ -60,11 +73,22 @@ def _aprbs(rng: np.random.Generator, steps: int, amplitude: float) -> np.ndarray
 
 
 def gain_terms(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]:
-    """The numerator and denominator of the slope, so several windows can be pooled.
+    """The numerator and denominator of the slope, kept apart so windows can be pooled.
 
-    Deviations are taken about the mean across probes, so whatever the probes had in common --
-    weather, the starting state, any constant bias -- cancels, and only the response to
-    *differences* in control survives.
+    Deviations are about the mean across probes, so whatever the probes shared -- weather, the
+    starting state, any constant bias -- cancels.
+
+    Parameters
+    ----------
+    actual : numpy.ndarray
+        The plant's response, shape `(n_probes, horizon)`.
+    predicted : numpy.ndarray
+        The model's response to the same probes, same shape.
+
+    Returns
+    -------
+    tuple of float
+        `(cross, square)`; the gain of a pooled set is the ratio of their sums.
     """
     if actual.shape != predicted.shape:
         raise ValueError(f"shape mismatch: {actual.shape} vs {predicted.shape}")
@@ -76,11 +100,20 @@ def gain_terms(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]
 def control_gain(actual: np.ndarray, predicted: np.ndarray) -> float:
     """Slope of the model's predicted deviation on the plant's, over the probes.
 
-    Both arrays are (n_probes, horizon). Deviations are taken about the mean across probes, so
-    whatever the control had in common with every probe -- weather, the starting state, any
-    constant bias -- cancels, and only the response to *differences* in control is scored.
+    Parameters
+    ----------
+    actual : numpy.ndarray
+        The plant's response, shape `(n_probes, horizon)`.
+    predicted : numpy.ndarray
+        The model's response to the same probes, same shape.
+
+    Returns
+    -------
+    float
+        1.0 moves as the plant does, 0.0 ignores the control; `NaN` when the probes did not
+        move the plant.
     """
     cross, square = gain_terms(actual, predicted)
     if square <= 0:
-        return float("nan")  # the probes did not move the plant; nothing to be right about
+        return float("nan")
     return cross / square
