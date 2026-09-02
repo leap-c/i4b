@@ -122,12 +122,12 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Path, mo):
     try:
-        default_source = Path(__file__).resolve().parents[1] / "source-data"
+        default_source = Path(__file__).resolve().parents[1] / "data" / "source"
     except NameError:
-        default_source = Path("source-data").resolve()
+        default_source = Path("data/source").resolve()
     source_input = mo.ui.text(
         value=str(default_source),
-        label="Normalized source-data directory",
+        label="Normalized source directory",
         full_width=True,
     )
     source_input

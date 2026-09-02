@@ -26,7 +26,7 @@ def _(mo):
     mo.md("""
     # Benchmark source data
 
-    Artifacts written by `scripts/prepare_benchmark_data.py`: TABULA building
+    Artifacts written by `data/scripts/prepare_benchmark_data.py`: TABULA building
     records, Open-Meteo reference weather and forecast runs, and Energy-Charts
     day-ahead prices.
 
@@ -34,7 +34,7 @@ def _(mo):
     script first:
 
     ```bash
-    python scripts/prepare_benchmark_data.py --output-dir source-data
+    python data/scripts/prepare_benchmark_data.py --output-dir data/source
     ```
     """)
 
@@ -195,9 +195,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Path, mo):
     try:
-        _default = Path(__file__).resolve().parents[1] / "source-data"
+        _default = Path(__file__).resolve().parents[1] / "data" / "source"
     except NameError:
-        _default = Path("source-data").resolve()
+        _default = Path("data/source").resolve()
 
     data_dir_input = mo.ui.text(
         value=str(_default), label="Source data directory", full_width=True

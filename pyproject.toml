@@ -55,4 +55,4 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["benchmark/tests"]
-pythonpath = ["benchmark"]
+pythonpath = ["benchmark", "benchmark/data"]

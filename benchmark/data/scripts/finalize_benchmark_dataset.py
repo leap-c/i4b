@@ -29,7 +29,7 @@ EXPECTED_CONTROLLERS = MPC_CONTROLLERS | {"open-loop-aprbs"}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("dataset", type=Path, nargs="?", default=Path("production"))
+    parser.add_argument("dataset", type=Path, nargs="?", default=Path("corpus"))
     parser.add_argument("--rows-per-shard", type=int, default=4_000_000)
     parser.add_argument("--allow-partial", action="store_true")
     return parser.parse_args()

@@ -35,7 +35,7 @@ BASE_CONTROLLER = "open-loop-aprbs"
 
 def _args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("production"))
+    parser.add_argument("--dataset", type=Path, default=Path("corpus"))
     parser.add_argument("--staging", type=Path, default=None)
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()

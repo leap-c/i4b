@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from i4b_bench import ScenarioEnv, eval_scenario_closed_loop, evaluation_scenarios, load_dataset
 
-DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production"))
+DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "data" / "corpus"))
 pytestmark = pytest.mark.skipif(
     not (DATASET / "trajectories.parquet").exists(), reason="benchmark dataset not present"
 )

@@ -8,8 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-#: This directory. Sibling scripts are located from here.
-BENCH = Path(__file__).resolve().parents[1]
+#: The data directory. Sibling scripts and the corpus are located from here.
+DATA = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,7 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     # What the collector needs on its path to import `i4b`, which is not this directory.
-    parser.add_argument("--i4b-root", type=Path, default=BENCH.parent)
+    parser.add_argument("--i4b-root", type=Path, default=DATA.parents[1])
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--solver-threads", type=int, default=1)
     parser.add_argument("--horizon", type=int, default=96)
@@ -49,32 +49,32 @@ def main() -> None:
     subprocess.run(
         [
             sys.executable,
-            str(BENCH / "scripts/generate_safe_aprbs.py"),
+            str(DATA / "scripts/generate_safe_aprbs.py"),
             "--dataset",
             str(dataset),
             "--workers",
             str(args.workers),
         ],
-        cwd=BENCH,
+        cwd=DATA,
         check=True,
     )
     subprocess.run(
         [
             sys.executable,
-            str(BENCH / "scripts/finalize_benchmark_dataset.py"),
+            str(DATA / "scripts/finalize_benchmark_dataset.py"),
             str(dataset),
         ],
-        cwd=BENCH,
+        cwd=DATA,
         check=True,
     )
     subprocess.run(
         [
             sys.executable,
-            str(BENCH / "scripts/finalize_benchmark_tables.py"),
+            str(DATA / "scripts/finalize_benchmark_tables.py"),
             str(dataset),
             str(args.output.resolve()),
         ],
-        cwd=BENCH,
+        cwd=DATA,
         check=True,
     )
 

@@ -1,11 +1,11 @@
-# `source-data/` — what the corpus is built from
+# `source/` — what the corpus is built from
 
 This directory is **not tracked**: it is ~200 MB and it is re-downloadable. Populate it with
 
 ```bash
+cd benchmark/data
 uv run python scripts/prepare_benchmark_data.py \
-    --config scripts/benchmark_source_data.json \
-    --output-dir source-data
+    --config scripts/benchmark_source_data.json --output-dir source
 ```
 
 which acquires TABULA building records, Open-Meteo reference weather and archived forecast runs,
@@ -13,7 +13,7 @@ and Energy-Charts day-ahead prices — then normalizes each into typed Parquet w
 manifest beside it.
 
 ```
-source-data/
+source/
   raw/          exactly what the provider returned: tabula/, open_meteo/, energy_charts/
   normalized/   typed Parquet, in this benchmark's column names:
                   buildings/  weather_reference/  weather_forecasts/  electricity_prices/

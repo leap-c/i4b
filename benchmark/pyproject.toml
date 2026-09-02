@@ -41,5 +41,5 @@ notebooks = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# `scripts` is not shipped in the wheel, but its tests import from it.
-pythonpath = ["."]
+# The corpus-building scripts are not shipped in the wheel, but their tests import from them.
+pythonpath = [".", "data"]

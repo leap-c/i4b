@@ -52,7 +52,7 @@ def controller_id(amplitude: float) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("production"))
+    parser.add_argument("--dataset", type=Path, default=Path("corpus"))
     parser.add_argument("--amplitude", type=float, nargs="+", required=True)
     parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     parser.add_argument("--max-jobs", type=int)

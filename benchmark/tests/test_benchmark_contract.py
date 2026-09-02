@@ -24,7 +24,7 @@ from i4b_bench import (
 from i4b_bench.observation import history_channels
 from i4b_bench.open_loop_eval import eval_scenario_open_loop, open_loop_setting
 
-DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production"))
+DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "data" / "corpus"))
 needs_dataset = pytest.mark.skipif(
     not (DATASET / "trajectories.parquet").exists(), reason="benchmark dataset not present"
 )
@@ -148,7 +148,7 @@ def test_prepare_disturbances_matches_the_plant_contract(dataset):
     params = load_params(dataset.buildings, row["building_id"])
     weather = read_reference_weather(
         Path(__file__).resolve().parents[1]
-        / "source-data/normalized/weather_reference"
+        / "data/source/normalized/weather_reference"
         / f"{row['location_id']}_{row['period_id']}.parquet"
     )
     plain = prepare_disturbances(weather, params, internal_gain_profile())

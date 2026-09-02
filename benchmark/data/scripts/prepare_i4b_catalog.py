@@ -13,8 +13,8 @@ from i4b_bench.generation import make_catalog, validate_buildings
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-dir", type=Path, default=Path("source-data"))
-    parser.add_argument("--output-dir", type=Path, default=Path("production"))
+    parser.add_argument("--source-dir", type=Path, default=Path("source"))
+    parser.add_argument("--output-dir", type=Path, default=Path("corpus"))
     parser.add_argument(
         "--config", type=Path, default=Path("scripts/benchmark_source_data.json")
     )

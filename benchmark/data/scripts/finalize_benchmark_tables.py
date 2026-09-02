@@ -39,7 +39,7 @@ def _args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("release", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--source-data", type=Path, default=Path("source-data"))
+    parser.add_argument("--source-data", type=Path, default=Path("source"))
     parser.add_argument(
         "--source-config",
         type=Path,

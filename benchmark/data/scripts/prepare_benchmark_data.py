@@ -9,7 +9,7 @@ is never imported by it.
 Usage:
     python scripts/prepare_benchmark_data.py \\
         --config scripts/benchmark_source_data.json \\
-        --output-dir /path/to/source-data
+        --output-dir /path/to/source
 """
 
 from __future__ import annotations

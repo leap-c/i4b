@@ -53,7 +53,7 @@ EXCITATION_DTYPE = pd.CategoricalDtype(
 )
 
 
-_DEFAULT_DIR = Path(__file__).resolve().parents[2] / "production"
+_DEFAULT_DIR = Path(__file__).resolve().parents[2] / "data" / "corpus"
 
 _RAW_COLUMN_RENAMES = {
     "ghi_W_m2": "ghi",

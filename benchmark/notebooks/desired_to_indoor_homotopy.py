@@ -137,7 +137,7 @@ def _(BUILDING_NAMES2CLASS, Path, mo):
     repo = Path(__file__).resolve().parents[1]
     weather_files = sorted(
         p.name
-        for p in (repo / "source-data/normalized/weather_reference").glob(
+        for p in (repo / "data/source/normalized/weather_reference").glob(
             "de_freiburg_*.parquet"
         )
     )
@@ -202,7 +202,7 @@ def _(
     _name = building_ui.value
     _params = dict(BUILDING_NAMES2CLASS[_name])
     _weather = pd.read_parquet(
-        repo / "source-data/normalized/weather_reference" / weather_ui.value
+        repo / "data/source/normalized/weather_reference" / weather_ui.value
     )
     _disturb = prepare_disturbances(
         _weather,

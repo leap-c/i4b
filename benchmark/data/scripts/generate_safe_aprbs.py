@@ -32,7 +32,7 @@ APRBS_AMPLITUDE_C = 1.5
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("production"))
+    parser.add_argument("--dataset", type=Path, default=Path("corpus"))
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--max-jobs", type=int)
     return parser.parse_args()
@@ -52,7 +52,7 @@ def _weather_path(country: str, period_id: str) -> Path:
     )
     return (
         _root
-        / "source-data/normalized/weather_reference"
+        / "source/normalized/weather_reference"
         / f"{location}_{period_id}.parquet"
     )
 

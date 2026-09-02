@@ -109,7 +109,7 @@ def make_mpc_controller(building_params: dict, horizon: int = 12):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("production"))
+    parser.add_argument("--dataset", type=Path, default=Path("data/corpus"))
     parser.add_argument("--scenario", type=str, required=True)
     parser.add_argument(
         "--steps", type=int, default=96, help="Number of evaluation steps (default: 96 = 1 day)"

@@ -62,14 +62,15 @@ src/i4b_bench/        the library
   corpus.py             building parameters, disturbances, reference weather
   generation.py         how the corpus is *made*; the rest of the package never imports it
   config/               the settings, one YAML per named set per loop -- see config/README.md
-scripts/              building and finalizing the corpus
+data/                 the dataset and everything that builds it -- see data/README.md
+  scripts/              the build pipeline
+  source/               TABULA workbooks and downloaded weather -- fetched, gitignored
+  corpus/               the built dataset -- generated, gitignored
 examples/             a worked controller, run end to end
 specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is
                       measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
 notebooks/            marimo notebooks over the corpus and its source data
 tests/                the contract: the import boundary, the views, gain calibration, leakage
-production/           the corpus itself -- generated, gitignored
-source-data/          TABULA workbooks and downloaded weather -- fetched, gitignored
 ```
 
 ## Running it
@@ -81,7 +82,7 @@ uv sync --all-packages --extra mpc --extra cpu
 uv run pytest                     # from the repository root, or from here
 ```
 
-Tests needing the corpus skip themselves when `production/` is absent; point `I4B_BENCHMARK` at
+Tests needing the corpus skip themselves when `data/corpus/` is absent; point `I4B_BENCHMARK` at
 another copy to use one.
 
 ## Building the corpus
@@ -89,12 +90,13 @@ another copy to use one.
 Only needed to regenerate, not to evaluate.
 
 ```bash
-uv run python scripts/prepare_benchmark_data.py --output-dir source-data   # TABULA + weather
-uv run python scripts/prepare_i4b_catalog.py                              # the building catalog
-uv run python scripts/generate_benchmark_dataset.py --collector ... --dataset ... --output ...
-uv run python scripts/finalize_benchmark_dataset.py production            # shards, splits, manifest
+cd data
+uv run python scripts/prepare_benchmark_data.py --output-dir source   # TABULA + weather
+uv run python scripts/prepare_i4b_catalog.py                          # the building catalog
+uv run python scripts/generate_benchmark_dataset.py --collector ...   # the trajectories
+uv run python scripts/finalize_benchmark_dataset.py corpus            # shards, splits, manifest
 ```
 
-`specs/DATA_SCHEMA.md` describes what comes out. The split assigns whole building *families* —
+`data/README.md` walks through each step; `specs/DATA_SCHEMA.md` describes what comes out. The split assigns whole building *families* —
 all three refurbishment levels of a house land on the same side of the train/test boundary, so a
 model cannot have seen the insulated version of a building it is tested on.
