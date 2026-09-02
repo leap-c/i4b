@@ -24,6 +24,7 @@ from .dataset import BenchmarkDataset, load_controller_data, load_dataset
 from .forecast import ForecastProvider
 from .observation import (
     DISTURBANCE_CHANNELS,
+    PLANT_STATE_CHANNELS,
     STATE_CHANNELS,
     ObsView,
     build_observation,
@@ -192,7 +193,9 @@ class ScenarioEnv:
 
         if traj is not None:
             # Set the building state from the recorded trajectory at start_step
-            state_at_start = {ch: float(traj.iloc[self._start_step][ch]) for ch in STATE_CHANNELS}
+            state_at_start = {
+                ch: float(traj.iloc[self._start_step][ch]) for ch in PLANT_STATE_CHANNELS
+            }
             self._env.state = self._env._build_observation(state_at_start)
 
         # Seed the history buffer from the recorded trajectory
@@ -208,10 +211,10 @@ class ScenarioEnv:
         # the input that produced it, so the inputs move one step forward with the state.
         self._history_buffer = []
         self._timestamps = []
-        input_channels = [ch for ch in self._history_channels if ch not in STATE_CHANNELS]
+        input_channels = [ch for ch in self._history_channels if ch not in PLANT_STATE_CHANNELS]
         rows = [] if history_slice is None else list(history_slice.itertuples(index=False))
         for previous, row in zip(rows, rows[1:]):
-            record = {ch: float(getattr(row, ch)) for ch in STATE_CHANNELS}
+            record = {ch: float(getattr(row, ch)) for ch in PLANT_STATE_CHANNELS}
             record.update({ch: float(getattr(previous, ch)) for ch in input_channels})
             self._history_buffer.append(record)
             self._timestamps.append(row.timestamp_utc.to_datetime64().astype("datetime64[s]"))
@@ -231,12 +234,8 @@ class ScenarioEnv:
         # step, so it is stamped at the end of the interval, beside the action and
         # disturbances that produced it.
         timestamp = self._env.p.index[min(self._env.t, len(self._env.p) - 1)]
-        record: dict[str, float] = {
-            "T_room": float(obs[STATE_CHANNELS.index("T_room")]),
-            "T_wall": float(obs[1]),
-            "T_hp_ret": float(obs[2]),
-            "T_hp_sup_applied": float(info["u"]),
-        }
+        record: dict[str, float] = {ch: float(obs[i]) for i, ch in enumerate(PLANT_STATE_CHANNELS)}
+        record["T_hp_sup_applied"] = float(info["u"])
         # Look up view-specific disturbance values from the exogenous data
         exo_row = self._exogenous.iloc[self._env.t - 1]
         for ch in self._disturbance_channels:
@@ -258,8 +257,9 @@ class ScenarioEnv:
         if not self._build_observations:
             return {}
         # Current state
-        state_vals = self._env.state[: len(STATE_CHANNELS)]
-        state = {ch: float(state_vals[i]) for i, ch in enumerate(STATE_CHANNELS)}
+        state_vals = self._env.state[: len(PLANT_STATE_CHANNELS)]
+        plant_state = {ch: float(state_vals[i]) for i, ch in enumerate(PLANT_STATE_CHANNELS)}
+        state = {ch: plant_state[ch] for ch in STATE_CHANNELS[self._view]}
 
         # History
         n = len(self._history_buffer)

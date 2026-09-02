@@ -11,7 +11,12 @@ import pyarrow.compute as pc
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
-from .observation import CONTROL_CHANNELS, STATE_CHANNELS
+from .observation import (
+    CONTROL_CHANNELS,
+    DISTURBANCE_CHANNELS,
+    STATE_CHANNELS,
+    ObsView,
+)
 
 STEP = pd.Timedelta(minutes=15)
 PER_DAY = 96
@@ -149,15 +154,19 @@ def utc(value) -> pd.Timestamp:
     return value.tz_localize("UTC") if value.tzinfo is None else value.tz_convert("UTC")
 
 
-def aligned(frame: pd.DataFrame, view_disturbances: tuple[str, ...]) -> pd.DataFrame:
+def aligned(frame: pd.DataFrame, view: ObsView) -> pd.DataFrame:
     """Move each row's applied action and disturbances onto the state they produced.
 
     `transitions.parquet` stores ``state_t + applied_input_t -> state_(t+1)``; the observation
-    contract pairs a state with what produced it. This is the same one-step shift
-    `ScenarioEnv` documents, applied to a corpus read instead of a rolling buffer.
+    contract pairs a state with what produced it. This is the same one-step shift `ScenarioEnv`
+    documents, applied to a corpus read instead of a rolling buffer -- and it takes a view for
+    the same reason, so a corpus-built history carries exactly the channels the env would build.
+
+    The frame must already carry the view's channels. A corpus transition frame satisfies
+    `perfect` as read; `realistic` needs the irradiance joined on from `exogenous.parquet` first.
     """
-    inputs = [*CONTROL_CHANNELS, *view_disturbances]
-    return frame[list(STATE_CHANNELS)].join(frame[inputs].shift(1)).iloc[1:]
+    inputs = [*CONTROL_CHANNELS, *DISTURBANCE_CHANNELS[view]]
+    return frame[list(STATE_CHANNELS[view])].join(frame[inputs].shift(1)).iloc[1:]
 
 
 @cache

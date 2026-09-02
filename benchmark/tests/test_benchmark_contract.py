@@ -14,7 +14,14 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from i4b_bench import DISTURBANCE_CHANNELS, ScenarioEnv, control_gain, load_dataset
+from i4b_bench import (
+    DISTURBANCE_CHANNELS,
+    STATE_CHANNELS,
+    ScenarioEnv,
+    control_gain,
+    load_dataset,
+)
+from i4b_bench.observation import history_channels
 from i4b_bench.open_loop_eval import eval_scenario_open_loop, open_loop_setting
 
 DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "production"))
@@ -89,12 +96,31 @@ def test_realistic_forecast_is_not_the_realised_weather(dataset, scenario):
 
 
 @needs_dataset
-def test_a_model_never_sees_the_wall_temperature(dataset, scenario):
-    """Nothing measures a wall, so it never reaches the covariates a predictor is handed."""
+@pytest.mark.parametrize("view", sorted(STATE_CHANNELS))
+def test_the_wall_temperature_is_exposed_only_by_the_perfect_view(dataset, scenario, view):
+    """`perfect` is the oracle view and shows the wall node; `realistic` cannot -- nothing
+    measures a wall, so a method scored there must infer the thermal mass from its own history."""
+    env = ScenarioEnv(
+        scenario, dataset=dataset, view=view, max_context_length=96, planning_steps=12
+    )
+    observation, _ = env.reset()
+    for _ in range(20):
+        observation, *_ = env.step(35.0)
+    exposed = (
+        set(observation["state"]) | set(observation["history"]) | set(observation["forecast"])
+    )
+    assert ("T_wall" in exposed) == (view == "perfect")
+    assert set(observation["state"]) == set(STATE_CHANNELS[view])
+
+
+@needs_dataset
+def test_the_predictor_is_handed_only_the_declared_channels(dataset):
+    """Whatever a view declares is exactly what arrives -- no extra channel leaks through."""
     seen = {}
 
     def predictor(observations, controls):
-        seen["forecast"] = set(observations[0]["forecast"])
+        seen["history"] = {k for k in observations[0]["history"] if k != "timestamp"}
+        seen["forecast"] = {k for k in observations[0]["forecast"] if k != "timestamp"}
         return [{"T_room": np.zeros(u.shape)} for u in controls]
 
     setting = open_loop_setting("fast_eval")
@@ -102,7 +128,8 @@ def test_a_model_never_sees_the_wall_temperature(dataset, scenario):
     eval_scenario_open_loop(
         window, predictor, dataset=dataset, setting=replace(setting, use_forecast=False)
     )
-    assert "T_wall" not in seen["forecast"]
+    assert seen["history"] == set(history_channels(setting.view))
+    assert seen["forecast"] == set(DISTURBANCE_CHANNELS[setting.view])
 
 
 @needs_dataset

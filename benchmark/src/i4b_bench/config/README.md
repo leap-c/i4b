@@ -27,6 +27,23 @@ which is the argument you pass in. Dates are plain `YYYY-MM-DD`; PyYAML parses t
 `datetime.date`, and the harness resolves each to a step index against the dataset's own clock, so
 a setting stays readable and stays valid if the corpus is regenerated at a different resolution.
 
+## What each view exposes
+
+`view` in `common` picks how much of the plant a method may see. It is the benchmark's main
+difficulty knob, and the gap between a method's two scores is the price of the missing
+information.
+
+| | `perfect` | `realistic` |
+| --- | --- | --- |
+| state | `T_room`, `T_wall`, `T_hp_ret` | `T_room`, `T_hp_ret` |
+| disturbances | `T_amb`, `Qdot_gains` | `T_amb`, `ghi`, `dni`, `dhi` |
+
+`perfect` is the oracle: it shows the wall node, which makes the 4R3C dynamics fully observable,
+and the building-specific heat gain the simulator actually used. Neither is measurable on a real
+site. `realistic` is what an installation could be built to instrument — raw weather, plus the two
+temperatures a heat pump and a room sensor report — so a method there must infer the thermal mass
+from its own history and the gain from the weather.
+
 Settings live here, in the package, rather than in the dataset directory: they define what the
 benchmark *measures*, which is a decision and belongs under version control, while the dataset
 directory is gitignored.

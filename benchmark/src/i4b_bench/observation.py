@@ -5,10 +5,12 @@ and `build_observation` hands over exactly those. Both evaluations construct obs
 through this one function, so "the observation is the same in open and closed loop" is enforced
 rather than promised.
 
-Views differ only in which disturbances are visible. `perfect` shows the building-specific heat
-gain the simulator actually used; `realistic` shows the raw weather a site would measure or a
-forecast would deliver, leaving the model to infer the gain. Neither exposes the wall
-temperature to a learned model -- nothing measures a wall.
+A view is one answer to "what could you actually know here". `perfect` is the oracle: the
+building-specific heat gain the simulator used, and the wall node -- neither of which any site
+can instrument, but both of which make the dynamics fully observable. `realistic` is what an
+installation could be built to measure: raw weather, and the two temperatures a heat pump and a
+room sensor report. So the views differ in their disturbances *and* in how much of the state
+they expose, and the gap between a method's two scores is the price of the missing information.
 """
 
 from __future__ import annotations
@@ -20,10 +22,24 @@ import numpy as np
 
 ObsView = Literal["perfect", "realistic"]
 
-STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
+#: The plant's state vector, in the plant's own order. Seeding a run and reading `env.state` go
+#: through this, so it is fixed regardless of what a view chooses to show.
+PLANT_STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
+
 CONTROL_CHANNELS = ("T_hp_sup_applied",)
-#: What a learned model predicts. `T_wall` is deliberately absent.
+
+#: What a learned model predicts. `T_wall` stays out even under `perfect`: it is scored on
+#: `T_room`, and a method free to predict the wall as well can still do so -- the channel is in
+#: its context, and nothing here caps what a returned dict may contain.
 TARGET_CHANNELS = ("T_room", "T_hp_ret")
+
+#: How much of the state each view exposes. `perfect` shows the wall node, which makes the 4R3C
+#: dynamics fully observable; a model there need not infer the thermal mass from its own history.
+#: `realistic` withholds it, because nothing measures a wall.
+STATE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
+    "perfect": PLANT_STATE_CHANNELS,
+    "realistic": ("T_room", "T_hp_ret"),
+}
 
 DISTURBANCE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
     "perfect": ("T_amb", "Qdot_gains"),
@@ -33,7 +49,7 @@ DISTURBANCE_CHANNELS: dict[ObsView, tuple[str, ...]] = {
 
 def history_channels(view: ObsView) -> tuple[str, ...]:
     """The channels a history row carries: state, the action that produced it, disturbances."""
-    return STATE_CHANNELS + CONTROL_CHANNELS + DISTURBANCE_CHANNELS[view]
+    return STATE_CHANNELS[view] + CONTROL_CHANNELS + DISTURBANCE_CHANNELS[view]
 
 
 def build_observation(

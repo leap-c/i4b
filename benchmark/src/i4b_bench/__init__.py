@@ -36,6 +36,7 @@ from .dataset import (
 from .observation import (
     CONTROL_CHANNELS,
     DISTURBANCE_CHANNELS,
+    PLANT_STATE_CHANNELS,
     STATE_CHANNELS,
     TARGET_CHANNELS,
     ObsView,
@@ -54,6 +55,7 @@ from .scenario_env import ScenarioEnv
 __all__ = [
     "CONTROL_CHANNELS",
     "DISTURBANCE_CHANNELS",
+    "PLANT_STATE_CHANNELS",
     "EXCITATION",
     "EXCITATION_DTYPE",
     "STATE_CHANNELS",

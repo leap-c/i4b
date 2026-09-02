@@ -173,6 +173,13 @@ def main() -> None:
     manifest["shards"] = list(manifest["shards"]) + written
     manifest.setdefault("excitation_levels", {})["open_loop_ladder_C"] = sorted(
         float(a) for a in frame["residual_amplitude_C"].unique())
+    # Counted from the tables rather than incremented, so the manifest cannot drift out of step
+    # with them across repeated appends.
+    manifest["trajectory_count"] = len(trajectories) + len(new_rows)
+    manifest["transition_count"] = sum(
+        pq.ParquetFile(shard).metadata.num_rows
+        for shard in sorted((dataset / "transitions").glob("part-*.parquet"))
+    )
     (dataset / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
 
     print(f"\nadded {len(new_rows)} trajectories, {len(written)} shards, "

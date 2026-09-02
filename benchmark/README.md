@@ -21,6 +21,11 @@ closed_loop = eval_benchmark_closed_loop(controller)  # what did acting on it co
 Both hand over the same observation, so a model written for one runs in the other unchanged. Both
 return a DataFrame and write nothing.
 
+The `view` decides how much of the plant that observation reveals: `perfect` shows the wall node
+and the true heat gain — neither measurable on a real site, but together they make the dynamics
+fully observable — while `realistic` shows only raw weather and the two temperatures a heat pump
+and a room sensor report. See `src/i4b_bench/config/README.md`.
+
 **Open loop** gives a predictor a context and *candidate control trajectories*, and scores two
 things. `mae_K` asks whether the prediction tracks the building. `gain` asks whether it moves when
 the control moves: roll the plant under perturbed controls, and regress the model's predicted
