@@ -112,6 +112,7 @@ def eval_benchmark_open_loop(
     dataset_dir=None,
     setting: OpenLoopBenchmark | None = None,
     batch_size: int = 64,
+    workers: int = 1,
 ) -> pd.DataFrame:
     """Score a predictor on the open-loop benchmark.
 
@@ -129,6 +130,12 @@ def eval_benchmark_open_loop(
         What to run. Defaults to `open_loop_setting("benchmark")`.
     batch_size : int
         Windows per predictor call. Trades peak memory against call overhead.
+    workers : int
+        Processes driving the plant. The probes are the expensive part and windows are
+        independent, so this scales close to linearly. The predictor stays in the parent and is
+        still called once per batch, so a GPU model is neither copied nor contended for. Batches
+        are grouped by building, because preparing a building's archived forecast runs costs
+        ~40 s and is cached per process.
 
     Returns
     -------
@@ -145,12 +152,30 @@ def eval_benchmark_open_loop(
     _check_split(dataset, setting)
 
     horizon = round(setting.horizon_hours * 4)
+    # Group by building so a worker prepares each building's forecast runs once, not per window.
+    ordered = sorted(setting.scenarios.items(), key=lambda kv: (kv[1].building, kv[0]))
+    jobs = [
+        (round(days * PER_DAY), ordered[start : start + batch_size], days)
+        for days in setting.context_days
+        for start in range(0, len(ordered), batch_size)
+    ]
+
     rows = []
-    for days in setting.context_days:
-        context = round(days * PER_DAY)
-        for start in range(0, len(setting.scenarios), batch_size):
-            batch = list(setting.scenarios.items())[start : start + batch_size]
-            rows += _score(dataset, setting, batch, context, horizon, predictor, days)
+    if workers > 1:
+        from concurrent.futures import ProcessPoolExecutor
+
+        with ProcessPoolExecutor(
+            max_workers=workers, initializer=_init_worker, initargs=(dataset,)
+        ) as pool:
+            futures = [
+                pool.submit(_roll_in_worker, setting, batch, context, horizon, days)
+                for context, batch, days in jobs
+            ]
+            for future in futures:
+                rows += _score(future.result(), predictor)
+    else:
+        for context, batch, days in jobs:
+            rows += _score(_roll(dataset, setting, batch, context, horizon, days), predictor)
     frame = pd.DataFrame(rows)
     frame["excitation"] = frame["excitation"].astype(EXCITATION_DTYPE)
     return frame
@@ -189,12 +214,30 @@ def eval_scenario_open_loop(
     days = context_days if context_days is not None else setting.context_days[0]
     horizon = round(setting.horizon_hours * 4)
     batch = [(f"{window.building}@{window.start}", window)]
-    return _score(dataset, setting, batch, round(days * PER_DAY), horizon, predictor, days)[0]
+    prepared = _roll(dataset, setting, batch, round(days * PER_DAY), horizon, days)
+    return _score(prepared, predictor)[0]
 
 
-def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[dict]:
-    """Roll the plant for one batch of windows, ask the predictor once, and score."""
-    observations, controls, realised, meta = [], [], [], []
+_WORKER_DATASET: BenchmarkDataset | None = None
+
+
+def _init_worker(dataset: BenchmarkDataset) -> None:
+    """Hand each worker the corpus once, rather than with every batch."""
+    global _WORKER_DATASET
+    _WORKER_DATASET = dataset
+
+
+def _roll_in_worker(setting, batch, context, horizon, days) -> list[dict]:
+    return _roll(_WORKER_DATASET, setting, batch, context, horizon, days)
+
+
+def _roll(dataset, setting, batch, context, horizon, days) -> list[dict]:
+    """Drive the plant for one batch of windows: the observation, the probes, the responses.
+
+    The plant half of scoring, and the expensive one. It needs no predictor, so it is what a
+    worker process runs.
+    """
+    prepared = []
     for name, window in batch:
         anchor = step_of(dataset, window.building, window.start)
         trajectory = load_controller_data(dataset, window.controller, window.building)
@@ -213,6 +256,10 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
             forecast_correction=setting.forecast_correction,
         )
         observation, _ = env.reset()
+        # The probes below only read `T_room` out of `info`; assembling the full observation on
+        # each of their `probes * horizon` steps copies the whole context every time, and costs
+        # about ten times the rollout itself.
+        env.build_observations = False
         nominal = trajectory["T_hp_sup_applied"].to_numpy(float)[anchor : anchor + horizon]
         plans = probe_plans(
             np.random.default_rng(anchor), nominal, setting.probe_amplitude, setting.probes
@@ -224,30 +271,39 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
                 _, _, _, _, info = env.step(float(action))
                 rolled[k, t] = info["T_room"]
 
-        observations.append(observation)
-        controls.append(plans)
-        realised.append(rolled)
-        meta.append(
+        prepared.append(
             {
-                "window": name,
-                "controller": window.controller,
-                "start": str(window.start),
-                "context_days": days,
-                **scenario_metadata(dataset, window.building),
+                "observation": observation,
+                "plans": plans,
+                "actual": rolled,
+                "meta": {
+                    "window": name,
+                    "controller": window.controller,
+                    "start": str(window.start),
+                    "context_days": days,
+                    **scenario_metadata(dataset, window.building),
+                },
             }
         )
+    return prepared
 
+
+def _score(prepared: list[dict], predictor: Predictor) -> list[dict]:
+    """Ask the predictor about a prepared batch, and turn its answer into result rows."""
+    observations = [item["observation"] for item in prepared]
+    controls = [item["plans"] for item in prepared]
     predictions = predictor(observations, controls)
     if len(predictions) != len(observations):
         raise ValueError(f"predictor returned {len(predictions)} blocks for {len(observations)}")
 
-    nominal_index = setting.probes // 2
+    nominal_index = len(controls[0]) // 2
     rows = []
-    for info, actual, prediction in zip(meta, realised, predictions):
+    for item, prediction in zip(prepared, predictions):
         if SCORED_CHANNEL not in prediction:
             raise ValueError(
                 f"predictor returned {sorted(prediction)}, without {SCORED_CHANNEL!r}"
             )
+        actual = item["actual"]
         predicted = np.asarray(prediction[SCORED_CHANNEL], dtype=float)
         if predicted.shape != actual.shape:
             raise ValueError(f"expected {actual.shape} predictions, got {predicted.shape}")
@@ -256,8 +312,8 @@ def _score(dataset, setting, batch, context, horizon, predictor, days) -> list[d
         response = float(np.sqrt(square / actual.size))
         rows.append(
             {
-                **info,
-                "excitation": EXCITATION.get(info["controller"]),
+                **item["meta"],
+                "excitation": EXCITATION.get(item["meta"]["controller"]),
                 "mae_K": float(np.abs(error).mean()),
                 "bias_K": float(error.mean()),
                 "response_K": response,

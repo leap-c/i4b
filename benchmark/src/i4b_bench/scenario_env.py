@@ -66,7 +66,9 @@ class ScenarioEnv:
         pre-computed ``Qdot_gains``; ``"realistic"`` gives raw weather and omits the wall.
     build_observation : bool
         Assemble the observation dict each step. ``False`` skips the cost when only the
-        trajectory is wanted, as during generation.
+        trajectory is wanted, as during generation or a counterfactual probe. Readable and
+        writable afterwards as ``env.build_observations``, so a caller can take one observation
+        and then roll without paying for the rest.
     forecast_correction : float
         How far an archived forecast is pulled toward the current sensor reading, in [0, 1].
     """
@@ -126,7 +128,7 @@ class ScenarioEnv:
         )
 
         # Building an observation costs a dict of arrays per step; generation discards them.
-        self._build_observations = build_observation
+        self.build_observations = build_observation
 
         # The recorded trajectory seeds the history buffer, and is the only thing that needs
         # one; `initial_controller_id=None` drives a fresh run instead of replaying.
@@ -271,7 +273,7 @@ class ScenarioEnv:
 
     def _build_observation(self) -> dict:
         """Construct the nested observation dict, unless the caller opted out of the cost."""
-        if not self._build_observations:
+        if not self.build_observations:
             return {}
         # Current state
         state_vals = self._env.state[: len(PLANT_STATE_CHANNELS)]
