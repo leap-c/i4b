@@ -63,10 +63,19 @@ pytest_cache/
 *.local
 *.secret
 
-# The benchmark corpus and its source data: regenerable, and far too large to track.
+# The benchmark corpus and its source data: regenerable, and far too large to track. Only the
+# directory structure and its READMEs are kept, so a fresh clone shows where data belongs.
 # (benchmark/scripts/prepare_benchmark_data.py fetches the source data.)
-/benchmark/source-data/
-/benchmark/production*/
+/benchmark/production/**
+!/benchmark/production/README.md
+/benchmark/source-data/**
+!/benchmark/source-data/README.md
+!/benchmark/source-data/raw/
+!/benchmark/source-data/raw/.gitkeep
+!/benchmark/source-data/normalized/
+!/benchmark/source-data/normalized/.gitkeep
+!/benchmark/source-data/manifests/
+!/benchmark/source-data/manifests/.gitkeep
 /benchmark/i4b-benchmark*/
 
 # marimo session caches
