@@ -13,6 +13,6 @@ common:
 scenarios:
   scenario1:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-01-08
-    end: 2026-01-09
+    start: 2026-01-08 06:00:00
+    end: 2026-01-09 06:00:00
     controller: mpc-aprbs-high

@@ -4,6 +4,13 @@
 # evenly through each year, so the set covers the seasons rather than leaving it to a seed, and
 # the controller names whose recorded run fills the context -- which decides whether the history
 # is excited, and so whether the dynamics are identifiable from it at all.
+#
+# Every window names a time as well as a date, on eight slots three hours apart. The thermal day
+# has distinct regimes -- night setback, morning recovery, solar peak, evening peak -- and a set
+# anchored only at midnight would sample one of them. Slots are dealt round-robin within each
+# controller, so all 56 slot x controller pairs occur and excitation is never confounded with
+# time of day; that leaves slot totals at 73-80 rather than an exact 75, which is the better
+# trade.
 
 common:
   split: test
@@ -18,2401 +25,2401 @@ common:
 scenarios:
   window001:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 00:00:00
     controller: mpc-nominal
   window002:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 00:00:00
     controller: mpc-offset-plus-2K
   window003:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 00:00:00
     controller: mpc-offset-minus-2K
   window004:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 00:00:00
     controller: mpc-aprbs-low
   window005:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 00:00:00
     controller: mpc-aprbs-medium
   window006:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 00:00:00
     controller: mpc-aprbs-high
   window007:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window008:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 03:00:00
     controller: mpc-nominal
   window009:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 03:00:00
     controller: mpc-offset-plus-2K
   window010:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 03:00:00
     controller: mpc-offset-minus-2K
   window011:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 03:00:00
     controller: mpc-aprbs-low
   window012:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 03:00:00
     controller: mpc-aprbs-medium
   window013:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 03:00:00
     controller: mpc-aprbs-high
   window014:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window015:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 06:00:00
     controller: mpc-nominal
   window016:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 06:00:00
     controller: mpc-offset-plus-2K
   window017:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 06:00:00
     controller: mpc-offset-minus-2K
   window018:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 06:00:00
     controller: mpc-aprbs-low
   window019:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 06:00:00
     controller: mpc-aprbs-medium
   window020:
     building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 06:00:00
     controller: mpc-aprbs-high
   window021:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 09:00:00
     controller: mpc-nominal
   window022:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 09:00:00
     controller: mpc-offset-plus-2K
   window023:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 09:00:00
     controller: mpc-offset-minus-2K
   window024:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 09:00:00
     controller: mpc-aprbs-low
   window025:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 09:00:00
     controller: mpc-aprbs-medium
   window026:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 09:00:00
     controller: mpc-aprbs-high
   window027:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window028:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 12:00:00
     controller: mpc-nominal
   window029:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 12:00:00
     controller: mpc-offset-plus-2K
   window030:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 12:00:00
     controller: mpc-offset-minus-2K
   window031:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 12:00:00
     controller: mpc-aprbs-low
   window032:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 12:00:00
     controller: mpc-aprbs-medium
   window033:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 12:00:00
     controller: mpc-aprbs-high
   window034:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window035:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 15:00:00
     controller: mpc-nominal
   window036:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 15:00:00
     controller: mpc-offset-plus-2K
   window037:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 15:00:00
     controller: mpc-offset-minus-2K
   window038:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 15:00:00
     controller: mpc-aprbs-low
   window039:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 15:00:00
     controller: mpc-aprbs-medium
   window040:
     building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 15:00:00
     controller: mpc-aprbs-high
   window041:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 18:00:00
     controller: mpc-nominal
   window042:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 18:00:00
     controller: mpc-offset-plus-2K
   window043:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 18:00:00
     controller: mpc-offset-minus-2K
   window044:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 18:00:00
     controller: mpc-aprbs-low
   window045:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 18:00:00
     controller: mpc-aprbs-medium
   window046:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 18:00:00
     controller: mpc-aprbs-high
   window047:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window048:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 21:00:00
     controller: mpc-nominal
   window049:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 21:00:00
     controller: mpc-offset-plus-2K
   window050:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 21:00:00
     controller: mpc-offset-minus-2K
   window051:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 21:00:00
     controller: mpc-aprbs-low
   window052:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 21:00:00
     controller: mpc-aprbs-medium
   window053:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 21:00:00
     controller: mpc-aprbs-high
   window054:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window055:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 00:00:00
     controller: mpc-nominal
   window056:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 00:00:00
     controller: mpc-offset-plus-2K
   window057:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 00:00:00
     controller: mpc-offset-minus-2K
   window058:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 00:00:00
     controller: mpc-aprbs-low
   window059:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 00:00:00
     controller: mpc-aprbs-medium
   window060:
     building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 00:00:00
     controller: mpc-aprbs-high
   window061:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 03:00:00
     controller: mpc-nominal
   window062:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 03:00:00
     controller: mpc-offset-plus-2K
   window063:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 03:00:00
     controller: mpc-offset-minus-2K
   window064:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 03:00:00
     controller: mpc-aprbs-low
   window065:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 03:00:00
     controller: mpc-aprbs-medium
   window066:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 03:00:00
     controller: mpc-aprbs-high
   window067:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window068:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 06:00:00
     controller: mpc-nominal
   window069:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 06:00:00
     controller: mpc-offset-plus-2K
   window070:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 06:00:00
     controller: mpc-offset-minus-2K
   window071:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 06:00:00
     controller: mpc-aprbs-low
   window072:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 06:00:00
     controller: mpc-aprbs-medium
   window073:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 06:00:00
     controller: mpc-aprbs-high
   window074:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window075:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 09:00:00
     controller: mpc-nominal
   window076:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 09:00:00
     controller: mpc-offset-plus-2K
   window077:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 09:00:00
     controller: mpc-offset-minus-2K
   window078:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 09:00:00
     controller: mpc-aprbs-low
   window079:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 09:00:00
     controller: mpc-aprbs-medium
   window080:
     building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 09:00:00
     controller: mpc-aprbs-high
   window081:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 12:00:00
     controller: mpc-nominal
   window082:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 12:00:00
     controller: mpc-offset-plus-2K
   window083:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 12:00:00
     controller: mpc-offset-minus-2K
   window084:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 12:00:00
     controller: mpc-aprbs-low
   window085:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 12:00:00
     controller: mpc-aprbs-medium
   window086:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 12:00:00
     controller: mpc-aprbs-high
   window087:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window088:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 15:00:00
     controller: mpc-nominal
   window089:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 15:00:00
     controller: mpc-offset-plus-2K
   window090:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 15:00:00
     controller: mpc-offset-minus-2K
   window091:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 15:00:00
     controller: mpc-aprbs-low
   window092:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 15:00:00
     controller: mpc-aprbs-medium
   window093:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 15:00:00
     controller: mpc-aprbs-high
   window094:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window095:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 18:00:00
     controller: mpc-nominal
   window096:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 18:00:00
     controller: mpc-offset-plus-2K
   window097:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 18:00:00
     controller: mpc-offset-minus-2K
   window098:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 18:00:00
     controller: mpc-aprbs-low
   window099:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 18:00:00
     controller: mpc-aprbs-medium
   window100:
     building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 18:00:00
     controller: mpc-aprbs-high
   window101:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 21:00:00
     controller: mpc-nominal
   window102:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 21:00:00
     controller: mpc-offset-plus-2K
   window103:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 21:00:00
     controller: mpc-offset-minus-2K
   window104:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 21:00:00
     controller: mpc-aprbs-low
   window105:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 21:00:00
     controller: mpc-aprbs-medium
   window106:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 21:00:00
     controller: mpc-aprbs-high
   window107:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window108:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 00:00:00
     controller: mpc-nominal
   window109:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 00:00:00
     controller: mpc-offset-plus-2K
   window110:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 00:00:00
     controller: mpc-offset-minus-2K
   window111:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 00:00:00
     controller: mpc-aprbs-low
   window112:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 00:00:00
     controller: mpc-aprbs-medium
   window113:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 00:00:00
     controller: mpc-aprbs-high
   window114:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window115:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 03:00:00
     controller: mpc-nominal
   window116:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 03:00:00
     controller: mpc-offset-plus-2K
   window117:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 03:00:00
     controller: mpc-offset-minus-2K
   window118:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 03:00:00
     controller: mpc-aprbs-low
   window119:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 03:00:00
     controller: mpc-aprbs-medium
   window120:
     building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 03:00:00
     controller: mpc-aprbs-high
   window121:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 06:00:00
     controller: mpc-nominal
   window122:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 06:00:00
     controller: mpc-offset-plus-2K
   window123:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 06:00:00
     controller: mpc-offset-minus-2K
   window124:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 06:00:00
     controller: mpc-aprbs-low
   window125:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 06:00:00
     controller: mpc-aprbs-medium
   window126:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 06:00:00
     controller: mpc-aprbs-high
   window127:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window128:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 09:00:00
     controller: mpc-nominal
   window129:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 09:00:00
     controller: mpc-offset-plus-2K
   window130:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 09:00:00
     controller: mpc-offset-minus-2K
   window131:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 09:00:00
     controller: mpc-aprbs-low
   window132:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 09:00:00
     controller: mpc-aprbs-medium
   window133:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 09:00:00
     controller: mpc-aprbs-high
   window134:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window135:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 12:00:00
     controller: mpc-nominal
   window136:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 12:00:00
     controller: mpc-offset-plus-2K
   window137:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 12:00:00
     controller: mpc-offset-minus-2K
   window138:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 12:00:00
     controller: mpc-aprbs-low
   window139:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 12:00:00
     controller: mpc-aprbs-medium
   window140:
     building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 12:00:00
     controller: mpc-aprbs-high
   window141:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 15:00:00
     controller: mpc-nominal
   window142:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 15:00:00
     controller: mpc-offset-plus-2K
   window143:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 15:00:00
     controller: mpc-offset-minus-2K
   window144:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 15:00:00
     controller: mpc-aprbs-low
   window145:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 15:00:00
     controller: mpc-aprbs-medium
   window146:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 15:00:00
     controller: mpc-aprbs-high
   window147:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window148:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 18:00:00
     controller: mpc-nominal
   window149:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 18:00:00
     controller: mpc-offset-plus-2K
   window150:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 18:00:00
     controller: mpc-offset-minus-2K
   window151:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 18:00:00
     controller: mpc-aprbs-low
   window152:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 18:00:00
     controller: mpc-aprbs-medium
   window153:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 18:00:00
     controller: mpc-aprbs-high
   window154:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window155:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 21:00:00
     controller: mpc-nominal
   window156:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 21:00:00
     controller: mpc-offset-plus-2K
   window157:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 21:00:00
     controller: mpc-offset-minus-2K
   window158:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 21:00:00
     controller: mpc-aprbs-low
   window159:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 21:00:00
     controller: mpc-aprbs-medium
   window160:
     building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 21:00:00
     controller: mpc-aprbs-high
   window161:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 00:00:00
     controller: mpc-nominal
   window162:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 00:00:00
     controller: mpc-offset-plus-2K
   window163:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 00:00:00
     controller: mpc-offset-minus-2K
   window164:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 00:00:00
     controller: mpc-aprbs-low
   window165:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 00:00:00
     controller: mpc-aprbs-medium
   window166:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 00:00:00
     controller: mpc-aprbs-high
   window167:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window168:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 03:00:00
     controller: mpc-nominal
   window169:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 03:00:00
     controller: mpc-offset-plus-2K
   window170:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 03:00:00
     controller: mpc-offset-minus-2K
   window171:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 03:00:00
     controller: mpc-aprbs-low
   window172:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 03:00:00
     controller: mpc-aprbs-medium
   window173:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 03:00:00
     controller: mpc-aprbs-high
   window174:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window175:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 06:00:00
     controller: mpc-nominal
   window176:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 06:00:00
     controller: mpc-offset-plus-2K
   window177:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 06:00:00
     controller: mpc-offset-minus-2K
   window178:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 06:00:00
     controller: mpc-aprbs-low
   window179:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 06:00:00
     controller: mpc-aprbs-medium
   window180:
     building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 06:00:00
     controller: mpc-aprbs-high
   window181:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 09:00:00
     controller: mpc-nominal
   window182:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 09:00:00
     controller: mpc-offset-plus-2K
   window183:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 09:00:00
     controller: mpc-offset-minus-2K
   window184:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 09:00:00
     controller: mpc-aprbs-low
   window185:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 09:00:00
     controller: mpc-aprbs-medium
   window186:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 09:00:00
     controller: mpc-aprbs-high
   window187:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window188:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 12:00:00
     controller: mpc-nominal
   window189:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 12:00:00
     controller: mpc-offset-plus-2K
   window190:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 12:00:00
     controller: mpc-offset-minus-2K
   window191:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 12:00:00
     controller: mpc-aprbs-low
   window192:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 12:00:00
     controller: mpc-aprbs-medium
   window193:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 12:00:00
     controller: mpc-aprbs-high
   window194:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window195:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 15:00:00
     controller: mpc-nominal
   window196:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 15:00:00
     controller: mpc-offset-plus-2K
   window197:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 15:00:00
     controller: mpc-offset-minus-2K
   window198:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 15:00:00
     controller: mpc-aprbs-low
   window199:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 15:00:00
     controller: mpc-aprbs-medium
   window200:
     building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 15:00:00
     controller: mpc-aprbs-high
   window201:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 18:00:00
     controller: mpc-nominal
   window202:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 18:00:00
     controller: mpc-offset-plus-2K
   window203:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 18:00:00
     controller: mpc-offset-minus-2K
   window204:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 18:00:00
     controller: mpc-aprbs-low
   window205:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 18:00:00
     controller: mpc-aprbs-medium
   window206:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 18:00:00
     controller: mpc-aprbs-high
   window207:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window208:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 21:00:00
     controller: mpc-nominal
   window209:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 21:00:00
     controller: mpc-offset-plus-2K
   window210:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 21:00:00
     controller: mpc-offset-minus-2K
   window211:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 21:00:00
     controller: mpc-aprbs-low
   window212:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 21:00:00
     controller: mpc-aprbs-medium
   window213:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 21:00:00
     controller: mpc-aprbs-high
   window214:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window215:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 00:00:00
     controller: mpc-nominal
   window216:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 00:00:00
     controller: mpc-offset-plus-2K
   window217:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 00:00:00
     controller: mpc-offset-minus-2K
   window218:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 00:00:00
     controller: mpc-aprbs-low
   window219:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 00:00:00
     controller: mpc-aprbs-medium
   window220:
     building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 00:00:00
     controller: mpc-aprbs-high
   window221:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 03:00:00
     controller: mpc-nominal
   window222:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 03:00:00
     controller: mpc-offset-plus-2K
   window223:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 03:00:00
     controller: mpc-offset-minus-2K
   window224:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 03:00:00
     controller: mpc-aprbs-low
   window225:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 03:00:00
     controller: mpc-aprbs-medium
   window226:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 03:00:00
     controller: mpc-aprbs-high
   window227:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window228:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 06:00:00
     controller: mpc-nominal
   window229:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 06:00:00
     controller: mpc-offset-plus-2K
   window230:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 06:00:00
     controller: mpc-offset-minus-2K
   window231:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 06:00:00
     controller: mpc-aprbs-low
   window232:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 06:00:00
     controller: mpc-aprbs-medium
   window233:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 06:00:00
     controller: mpc-aprbs-high
   window234:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window235:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 09:00:00
     controller: mpc-nominal
   window236:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 09:00:00
     controller: mpc-offset-plus-2K
   window237:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 09:00:00
     controller: mpc-offset-minus-2K
   window238:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 09:00:00
     controller: mpc-aprbs-low
   window239:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 09:00:00
     controller: mpc-aprbs-medium
   window240:
     building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 09:00:00
     controller: mpc-aprbs-high
   window241:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 12:00:00
     controller: mpc-nominal
   window242:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 12:00:00
     controller: mpc-offset-plus-2K
   window243:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 12:00:00
     controller: mpc-offset-minus-2K
   window244:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 12:00:00
     controller: mpc-aprbs-low
   window245:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 12:00:00
     controller: mpc-aprbs-medium
   window246:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 12:00:00
     controller: mpc-aprbs-high
   window247:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window248:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 15:00:00
     controller: mpc-nominal
   window249:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 15:00:00
     controller: mpc-offset-plus-2K
   window250:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 15:00:00
     controller: mpc-offset-minus-2K
   window251:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 15:00:00
     controller: mpc-aprbs-low
   window252:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 15:00:00
     controller: mpc-aprbs-medium
   window253:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 15:00:00
     controller: mpc-aprbs-high
   window254:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window255:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 18:00:00
     controller: mpc-nominal
   window256:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 18:00:00
     controller: mpc-offset-plus-2K
   window257:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 18:00:00
     controller: mpc-offset-minus-2K
   window258:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 18:00:00
     controller: mpc-aprbs-low
   window259:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 18:00:00
     controller: mpc-aprbs-medium
   window260:
     building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 18:00:00
     controller: mpc-aprbs-high
   window261:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 21:00:00
     controller: mpc-nominal
   window262:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 21:00:00
     controller: mpc-offset-plus-2K
   window263:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 21:00:00
     controller: mpc-offset-minus-2K
   window264:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 21:00:00
     controller: mpc-aprbs-low
   window265:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 21:00:00
     controller: mpc-aprbs-medium
   window266:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 21:00:00
     controller: mpc-aprbs-high
   window267:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window268:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 00:00:00
     controller: mpc-nominal
   window269:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 00:00:00
     controller: mpc-offset-plus-2K
   window270:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 00:00:00
     controller: mpc-offset-minus-2K
   window271:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 00:00:00
     controller: mpc-aprbs-low
   window272:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 00:00:00
     controller: mpc-aprbs-medium
   window273:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 00:00:00
     controller: mpc-aprbs-high
   window274:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window275:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 03:00:00
     controller: mpc-nominal
   window276:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 03:00:00
     controller: mpc-offset-plus-2K
   window277:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 03:00:00
     controller: mpc-offset-minus-2K
   window278:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 03:00:00
     controller: mpc-aprbs-low
   window279:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 03:00:00
     controller: mpc-aprbs-medium
   window280:
     building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 03:00:00
     controller: mpc-aprbs-high
   window281:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 06:00:00
     controller: mpc-nominal
   window282:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 06:00:00
     controller: mpc-offset-plus-2K
   window283:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 06:00:00
     controller: mpc-offset-minus-2K
   window284:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 06:00:00
     controller: mpc-aprbs-low
   window285:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 06:00:00
     controller: mpc-aprbs-medium
   window286:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 06:00:00
     controller: mpc-aprbs-high
   window287:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window288:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 09:00:00
     controller: mpc-nominal
   window289:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 09:00:00
     controller: mpc-offset-plus-2K
   window290:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 09:00:00
     controller: mpc-offset-minus-2K
   window291:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 09:00:00
     controller: mpc-aprbs-low
   window292:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 09:00:00
     controller: mpc-aprbs-medium
   window293:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 09:00:00
     controller: mpc-aprbs-high
   window294:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window295:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 12:00:00
     controller: mpc-nominal
   window296:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 12:00:00
     controller: mpc-offset-plus-2K
   window297:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 12:00:00
     controller: mpc-offset-minus-2K
   window298:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 12:00:00
     controller: mpc-aprbs-low
   window299:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 12:00:00
     controller: mpc-aprbs-medium
   window300:
     building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 12:00:00
     controller: mpc-aprbs-high
   window301:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 15:00:00
     controller: mpc-nominal
   window302:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 15:00:00
     controller: mpc-offset-plus-2K
   window303:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 15:00:00
     controller: mpc-offset-minus-2K
   window304:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 15:00:00
     controller: mpc-aprbs-low
   window305:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 15:00:00
     controller: mpc-aprbs-medium
   window306:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 15:00:00
     controller: mpc-aprbs-high
   window307:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window308:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 18:00:00
     controller: mpc-nominal
   window309:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 18:00:00
     controller: mpc-offset-plus-2K
   window310:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 18:00:00
     controller: mpc-offset-minus-2K
   window311:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 18:00:00
     controller: mpc-aprbs-low
   window312:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 18:00:00
     controller: mpc-aprbs-medium
   window313:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 18:00:00
     controller: mpc-aprbs-high
   window314:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window315:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 21:00:00
     controller: mpc-nominal
   window316:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 21:00:00
     controller: mpc-offset-plus-2K
   window317:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 21:00:00
     controller: mpc-offset-minus-2K
   window318:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 21:00:00
     controller: mpc-aprbs-low
   window319:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 21:00:00
     controller: mpc-aprbs-medium
   window320:
     building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 21:00:00
     controller: mpc-aprbs-high
   window321:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 00:00:00
     controller: mpc-nominal
   window322:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 00:00:00
     controller: mpc-offset-plus-2K
   window323:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 00:00:00
     controller: mpc-offset-minus-2K
   window324:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 00:00:00
     controller: mpc-aprbs-low
   window325:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 00:00:00
     controller: mpc-aprbs-medium
   window326:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 00:00:00
     controller: mpc-aprbs-high
   window327:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window328:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 03:00:00
     controller: mpc-nominal
   window329:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 03:00:00
     controller: mpc-offset-plus-2K
   window330:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 03:00:00
     controller: mpc-offset-minus-2K
   window331:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 03:00:00
     controller: mpc-aprbs-low
   window332:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 03:00:00
     controller: mpc-aprbs-medium
   window333:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 03:00:00
     controller: mpc-aprbs-high
   window334:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window335:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 06:00:00
     controller: mpc-nominal
   window336:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 06:00:00
     controller: mpc-offset-plus-2K
   window337:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 06:00:00
     controller: mpc-offset-minus-2K
   window338:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 06:00:00
     controller: mpc-aprbs-low
   window339:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 06:00:00
     controller: mpc-aprbs-medium
   window340:
     building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 06:00:00
     controller: mpc-aprbs-high
   window341:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 09:00:00
     controller: mpc-nominal
   window342:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 09:00:00
     controller: mpc-offset-plus-2K
   window343:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 09:00:00
     controller: mpc-offset-minus-2K
   window344:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 09:00:00
     controller: mpc-aprbs-low
   window345:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 09:00:00
     controller: mpc-aprbs-medium
   window346:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 09:00:00
     controller: mpc-aprbs-high
   window347:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window348:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 12:00:00
     controller: mpc-nominal
   window349:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 12:00:00
     controller: mpc-offset-plus-2K
   window350:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 12:00:00
     controller: mpc-offset-minus-2K
   window351:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 12:00:00
     controller: mpc-aprbs-low
   window352:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 12:00:00
     controller: mpc-aprbs-medium
   window353:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 12:00:00
     controller: mpc-aprbs-high
   window354:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window355:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 15:00:00
     controller: mpc-nominal
   window356:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 15:00:00
     controller: mpc-offset-plus-2K
   window357:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 15:00:00
     controller: mpc-offset-minus-2K
   window358:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 15:00:00
     controller: mpc-aprbs-low
   window359:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 15:00:00
     controller: mpc-aprbs-medium
   window360:
     building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 15:00:00
     controller: mpc-aprbs-high
   window361:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 18:00:00
     controller: mpc-nominal
   window362:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 18:00:00
     controller: mpc-offset-plus-2K
   window363:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 18:00:00
     controller: mpc-offset-minus-2K
   window364:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 18:00:00
     controller: mpc-aprbs-low
   window365:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 18:00:00
     controller: mpc-aprbs-medium
   window366:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 18:00:00
     controller: mpc-aprbs-high
   window367:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window368:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 21:00:00
     controller: mpc-nominal
   window369:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 21:00:00
     controller: mpc-offset-plus-2K
   window370:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 21:00:00
     controller: mpc-offset-minus-2K
   window371:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 21:00:00
     controller: mpc-aprbs-low
   window372:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 21:00:00
     controller: mpc-aprbs-medium
   window373:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 21:00:00
     controller: mpc-aprbs-high
   window374:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window375:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 00:00:00
     controller: mpc-nominal
   window376:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 00:00:00
     controller: mpc-offset-plus-2K
   window377:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 00:00:00
     controller: mpc-offset-minus-2K
   window378:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 00:00:00
     controller: mpc-aprbs-low
   window379:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 00:00:00
     controller: mpc-aprbs-medium
   window380:
     building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 00:00:00
     controller: mpc-aprbs-high
   window381:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 03:00:00
     controller: mpc-nominal
   window382:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 03:00:00
     controller: mpc-offset-plus-2K
   window383:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 03:00:00
     controller: mpc-offset-minus-2K
   window384:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 03:00:00
     controller: mpc-aprbs-low
   window385:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 03:00:00
     controller: mpc-aprbs-medium
   window386:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 03:00:00
     controller: mpc-aprbs-high
   window387:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window388:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 06:00:00
     controller: mpc-nominal
   window389:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 06:00:00
     controller: mpc-offset-plus-2K
   window390:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 06:00:00
     controller: mpc-offset-minus-2K
   window391:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 06:00:00
     controller: mpc-aprbs-low
   window392:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 06:00:00
     controller: mpc-aprbs-medium
   window393:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 06:00:00
     controller: mpc-aprbs-high
   window394:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window395:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 09:00:00
     controller: mpc-nominal
   window396:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 09:00:00
     controller: mpc-offset-plus-2K
   window397:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 09:00:00
     controller: mpc-offset-minus-2K
   window398:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 09:00:00
     controller: mpc-aprbs-low
   window399:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 09:00:00
     controller: mpc-aprbs-medium
   window400:
     building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 09:00:00
     controller: mpc-aprbs-high
   window401:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 12:00:00
     controller: mpc-nominal
   window402:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 12:00:00
     controller: mpc-offset-plus-2K
   window403:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 12:00:00
     controller: mpc-offset-minus-2K
   window404:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 12:00:00
     controller: mpc-aprbs-low
   window405:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 12:00:00
     controller: mpc-aprbs-medium
   window406:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 12:00:00
     controller: mpc-aprbs-high
   window407:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window408:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 15:00:00
     controller: mpc-nominal
   window409:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 15:00:00
     controller: mpc-offset-plus-2K
   window410:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 15:00:00
     controller: mpc-offset-minus-2K
   window411:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 15:00:00
     controller: mpc-aprbs-low
   window412:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 15:00:00
     controller: mpc-aprbs-medium
   window413:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 15:00:00
     controller: mpc-aprbs-high
   window414:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window415:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 18:00:00
     controller: mpc-nominal
   window416:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 18:00:00
     controller: mpc-offset-plus-2K
   window417:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 18:00:00
     controller: mpc-offset-minus-2K
   window418:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 18:00:00
     controller: mpc-aprbs-low
   window419:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 18:00:00
     controller: mpc-aprbs-medium
   window420:
     building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 18:00:00
     controller: mpc-aprbs-high
   window421:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 21:00:00
     controller: mpc-nominal
   window422:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 21:00:00
     controller: mpc-offset-plus-2K
   window423:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 21:00:00
     controller: mpc-offset-minus-2K
   window424:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 21:00:00
     controller: mpc-aprbs-low
   window425:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 21:00:00
     controller: mpc-aprbs-medium
   window426:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 21:00:00
     controller: mpc-aprbs-high
   window427:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window428:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 00:00:00
     controller: mpc-nominal
   window429:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 00:00:00
     controller: mpc-offset-plus-2K
   window430:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 00:00:00
     controller: mpc-offset-minus-2K
   window431:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 00:00:00
     controller: mpc-aprbs-low
   window432:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 00:00:00
     controller: mpc-aprbs-medium
   window433:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 00:00:00
     controller: mpc-aprbs-high
   window434:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window435:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 03:00:00
     controller: mpc-nominal
   window436:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 03:00:00
     controller: mpc-offset-plus-2K
   window437:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 03:00:00
     controller: mpc-offset-minus-2K
   window438:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 03:00:00
     controller: mpc-aprbs-low
   window439:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 03:00:00
     controller: mpc-aprbs-medium
   window440:
     building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 03:00:00
     controller: mpc-aprbs-high
   window441:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 06:00:00
     controller: mpc-nominal
   window442:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 06:00:00
     controller: mpc-offset-plus-2K
   window443:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 06:00:00
     controller: mpc-offset-minus-2K
   window444:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 06:00:00
     controller: mpc-aprbs-low
   window445:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 06:00:00
     controller: mpc-aprbs-medium
   window446:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 06:00:00
     controller: mpc-aprbs-high
   window447:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window448:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 09:00:00
     controller: mpc-nominal
   window449:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 09:00:00
     controller: mpc-offset-plus-2K
   window450:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 09:00:00
     controller: mpc-offset-minus-2K
   window451:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 09:00:00
     controller: mpc-aprbs-low
   window452:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 09:00:00
     controller: mpc-aprbs-medium
   window453:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 09:00:00
     controller: mpc-aprbs-high
   window454:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window455:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 12:00:00
     controller: mpc-nominal
   window456:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 12:00:00
     controller: mpc-offset-plus-2K
   window457:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 12:00:00
     controller: mpc-offset-minus-2K
   window458:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 12:00:00
     controller: mpc-aprbs-low
   window459:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 12:00:00
     controller: mpc-aprbs-medium
   window460:
     building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 12:00:00
     controller: mpc-aprbs-high
   window461:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 15:00:00
     controller: mpc-nominal
   window462:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 15:00:00
     controller: mpc-offset-plus-2K
   window463:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 15:00:00
     controller: mpc-offset-minus-2K
   window464:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 15:00:00
     controller: mpc-aprbs-low
   window465:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 15:00:00
     controller: mpc-aprbs-medium
   window466:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 15:00:00
     controller: mpc-aprbs-high
   window467:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window468:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 18:00:00
     controller: mpc-nominal
   window469:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 18:00:00
     controller: mpc-offset-plus-2K
   window470:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 18:00:00
     controller: mpc-offset-minus-2K
   window471:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 18:00:00
     controller: mpc-aprbs-low
   window472:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 18:00:00
     controller: mpc-aprbs-medium
   window473:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 18:00:00
     controller: mpc-aprbs-high
   window474:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window475:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 21:00:00
     controller: mpc-nominal
   window476:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 21:00:00
     controller: mpc-offset-plus-2K
   window477:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 21:00:00
     controller: mpc-offset-minus-2K
   window478:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 21:00:00
     controller: mpc-aprbs-low
   window479:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 21:00:00
     controller: mpc-aprbs-medium
   window480:
     building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 21:00:00
     controller: mpc-aprbs-high
   window481:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 00:00:00
     controller: mpc-nominal
   window482:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 00:00:00
     controller: mpc-offset-plus-2K
   window483:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 00:00:00
     controller: mpc-offset-minus-2K
   window484:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 00:00:00
     controller: mpc-aprbs-low
   window485:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 00:00:00
     controller: mpc-aprbs-medium
   window486:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 00:00:00
     controller: mpc-aprbs-high
   window487:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window488:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 03:00:00
     controller: mpc-nominal
   window489:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 03:00:00
     controller: mpc-offset-plus-2K
   window490:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 03:00:00
     controller: mpc-offset-minus-2K
   window491:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 03:00:00
     controller: mpc-aprbs-low
   window492:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 03:00:00
     controller: mpc-aprbs-medium
   window493:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 03:00:00
     controller: mpc-aprbs-high
   window494:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window495:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 06:00:00
     controller: mpc-nominal
   window496:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 06:00:00
     controller: mpc-offset-plus-2K
   window497:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 06:00:00
     controller: mpc-offset-minus-2K
   window498:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 06:00:00
     controller: mpc-aprbs-low
   window499:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 06:00:00
     controller: mpc-aprbs-medium
   window500:
     building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 06:00:00
     controller: mpc-aprbs-high
   window501:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 09:00:00
     controller: mpc-nominal
   window502:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 09:00:00
     controller: mpc-offset-plus-2K
   window503:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 09:00:00
     controller: mpc-offset-minus-2K
   window504:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 09:00:00
     controller: mpc-aprbs-low
   window505:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 09:00:00
     controller: mpc-aprbs-medium
   window506:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 09:00:00
     controller: mpc-aprbs-high
   window507:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window508:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 12:00:00
     controller: mpc-nominal
   window509:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 12:00:00
     controller: mpc-offset-plus-2K
   window510:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 12:00:00
     controller: mpc-offset-minus-2K
   window511:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 12:00:00
     controller: mpc-aprbs-low
   window512:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 12:00:00
     controller: mpc-aprbs-medium
   window513:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 12:00:00
     controller: mpc-aprbs-high
   window514:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window515:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 15:00:00
     controller: mpc-nominal
   window516:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 15:00:00
     controller: mpc-offset-plus-2K
   window517:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 15:00:00
     controller: mpc-offset-minus-2K
   window518:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 15:00:00
     controller: mpc-aprbs-low
   window519:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 15:00:00
     controller: mpc-aprbs-medium
   window520:
     building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 15:00:00
     controller: mpc-aprbs-high
   window521:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 18:00:00
     controller: mpc-nominal
   window522:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 18:00:00
     controller: mpc-offset-plus-2K
   window523:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 18:00:00
     controller: mpc-offset-minus-2K
   window524:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 18:00:00
     controller: mpc-aprbs-low
   window525:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 18:00:00
     controller: mpc-aprbs-medium
   window526:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 18:00:00
     controller: mpc-aprbs-high
   window527:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 12:00:00
     controller: open-loop-aprbs
   window528:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 21:00:00
     controller: mpc-nominal
   window529:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 21:00:00
     controller: mpc-offset-plus-2K
   window530:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 21:00:00
     controller: mpc-offset-minus-2K
   window531:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 21:00:00
     controller: mpc-aprbs-low
   window532:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 21:00:00
     controller: mpc-aprbs-medium
   window533:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 21:00:00
     controller: mpc-aprbs-high
   window534:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 15:00:00
     controller: open-loop-aprbs
   window535:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 00:00:00
     controller: mpc-nominal
   window536:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 00:00:00
     controller: mpc-offset-plus-2K
   window537:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 00:00:00
     controller: mpc-offset-minus-2K
   window538:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 00:00:00
     controller: mpc-aprbs-low
   window539:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 00:00:00
     controller: mpc-aprbs-medium
   window540:
     building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 00:00:00
     controller: mpc-aprbs-high
   window541:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-04-30
+    start: 2025-04-30 03:00:00
     controller: mpc-nominal
   window542:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-05-17
+    start: 2025-05-17 03:00:00
     controller: mpc-offset-plus-2K
   window543:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-03
+    start: 2025-06-03 03:00:00
     controller: mpc-offset-minus-2K
   window544:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-06-21
+    start: 2025-06-21 03:00:00
     controller: mpc-aprbs-low
   window545:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-08
+    start: 2025-07-08 03:00:00
     controller: mpc-aprbs-medium
   window546:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-07-25
+    start: 2025-07-25 03:00:00
     controller: mpc-aprbs-high
   window547:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-11
+    start: 2025-08-11 18:00:00
     controller: open-loop-aprbs
   window548:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-08-28
+    start: 2025-08-28 06:00:00
     controller: mpc-nominal
   window549:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-09-14
+    start: 2025-09-14 06:00:00
     controller: mpc-offset-plus-2K
   window550:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-01
+    start: 2025-10-01 06:00:00
     controller: mpc-offset-minus-2K
   window551:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-10-19
+    start: 2025-10-19 06:00:00
     controller: mpc-aprbs-low
   window552:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-05
+    start: 2025-11-05 06:00:00
     controller: mpc-aprbs-medium
   window553:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-11-22
+    start: 2025-11-22 06:00:00
     controller: mpc-aprbs-high
   window554:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-09
+    start: 2025-12-09 21:00:00
     controller: open-loop-aprbs
   window555:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2025-12-26
+    start: 2025-12-26 09:00:00
     controller: mpc-nominal
   window556:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-12
+    start: 2026-01-12 09:00:00
     controller: mpc-offset-plus-2K
   window557:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-01-29
+    start: 2026-01-29 09:00:00
     controller: mpc-offset-minus-2K
   window558:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-02-16
+    start: 2026-02-16 09:00:00
     controller: mpc-aprbs-low
   window559:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-05
+    start: 2026-03-05 09:00:00
     controller: mpc-aprbs-medium
   window560:
     building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
-    start: 2026-03-22
+    start: 2026-03-22 09:00:00
     controller: mpc-aprbs-high
   window561:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-04-30
+    start: 2025-04-30 12:00:00
     controller: mpc-nominal
   window562:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-05-17
+    start: 2025-05-17 12:00:00
     controller: mpc-offset-plus-2K
   window563:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-03
+    start: 2025-06-03 12:00:00
     controller: mpc-offset-minus-2K
   window564:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-06-21
+    start: 2025-06-21 12:00:00
     controller: mpc-aprbs-low
   window565:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-08
+    start: 2025-07-08 12:00:00
     controller: mpc-aprbs-medium
   window566:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-07-25
+    start: 2025-07-25 12:00:00
     controller: mpc-aprbs-high
   window567:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-11
+    start: 2025-08-11 00:00:00
     controller: open-loop-aprbs
   window568:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-08-28
+    start: 2025-08-28 15:00:00
     controller: mpc-nominal
   window569:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-09-14
+    start: 2025-09-14 15:00:00
     controller: mpc-offset-plus-2K
   window570:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-01
+    start: 2025-10-01 15:00:00
     controller: mpc-offset-minus-2K
   window571:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-10-19
+    start: 2025-10-19 15:00:00
     controller: mpc-aprbs-low
   window572:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-05
+    start: 2025-11-05 15:00:00
     controller: mpc-aprbs-medium
   window573:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-11-22
+    start: 2025-11-22 15:00:00
     controller: mpc-aprbs-high
   window574:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-09
+    start: 2025-12-09 03:00:00
     controller: open-loop-aprbs
   window575:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2025-12-26
+    start: 2025-12-26 18:00:00
     controller: mpc-nominal
   window576:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-12
+    start: 2026-01-12 18:00:00
     controller: mpc-offset-plus-2K
   window577:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-01-29
+    start: 2026-01-29 18:00:00
     controller: mpc-offset-minus-2K
   window578:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-02-16
+    start: 2026-02-16 18:00:00
     controller: mpc-aprbs-low
   window579:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-05
+    start: 2026-03-05 18:00:00
     controller: mpc-aprbs-medium
   window580:
     building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
-    start: 2026-03-22
+    start: 2026-03-22 18:00:00
     controller: mpc-aprbs-high
   window581:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-04-30
+    start: 2025-04-30 21:00:00
     controller: mpc-nominal
   window582:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-05-17
+    start: 2025-05-17 21:00:00
     controller: mpc-offset-plus-2K
   window583:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-03
+    start: 2025-06-03 21:00:00
     controller: mpc-offset-minus-2K
   window584:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-06-21
+    start: 2025-06-21 21:00:00
     controller: mpc-aprbs-low
   window585:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-08
+    start: 2025-07-08 21:00:00
     controller: mpc-aprbs-medium
   window586:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-07-25
+    start: 2025-07-25 21:00:00
     controller: mpc-aprbs-high
   window587:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-11
+    start: 2025-08-11 06:00:00
     controller: open-loop-aprbs
   window588:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-08-28
+    start: 2025-08-28 00:00:00
     controller: mpc-nominal
   window589:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-09-14
+    start: 2025-09-14 00:00:00
     controller: mpc-offset-plus-2K
   window590:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-01
+    start: 2025-10-01 00:00:00
     controller: mpc-offset-minus-2K
   window591:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-10-19
+    start: 2025-10-19 00:00:00
     controller: mpc-aprbs-low
   window592:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-05
+    start: 2025-11-05 00:00:00
     controller: mpc-aprbs-medium
   window593:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-11-22
+    start: 2025-11-22 00:00:00
     controller: mpc-aprbs-high
   window594:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-09
+    start: 2025-12-09 09:00:00
     controller: open-loop-aprbs
   window595:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2025-12-26
+    start: 2025-12-26 03:00:00
     controller: mpc-nominal
   window596:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-12
+    start: 2026-01-12 03:00:00
     controller: mpc-offset-plus-2K
   window597:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-01-29
+    start: 2026-01-29 03:00:00
     controller: mpc-offset-minus-2K
   window598:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-02-16
+    start: 2026-02-16 03:00:00
     controller: mpc-aprbs-low
   window599:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-05
+    start: 2026-03-05 03:00:00
     controller: mpc-aprbs-medium
   window600:
     building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
-    start: 2026-03-22
+    start: 2026-03-22 03:00:00
     controller: mpc-aprbs-high
