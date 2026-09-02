@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "i4b-bench"
+version = "0.1.0"
+description = "The I4B benchmark: the corpus, the evaluation protocols, and the metrics"
+requires-python = ">=3.10"
+dependencies = [
+    "i4b",
+    "numpy>=2.2",
+    "pandas>=2.3",
+    "pyarrow>=17.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+# Building the corpus from source data: the TABULA workbooks and the weather download.
+generation = [
+    "openpyxl>=3.1",
+    "requests>=2.32",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/i4b_bench"]
+
+# Resolved from the sibling checkout while the two live in one repo. Extracting this directory
+# means dropping these three lines and letting `i4b` resolve from an index.
+[tool.uv.sources]
+i4b = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+notebooks = [
+    "marimo>=0.24.0",
+    "plotly>=6.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The corpus-building scripts are not shipped in the wheel, but their tests import from them.
+pythonpath = [".", "data"]

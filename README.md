@@ -14,6 +14,16 @@ Core capabilities:
 
 ![I4C_Grafik](https://github.com/lfrison/i4b/assets/104891971/65cce2cf-8801-45ba-811d-a965a0115c08)
 
+### The I4B benchmark
+
+`benchmark/` is a self-contained subproject built on this simulator: a corpus of 191 TABULA
+single-family houses simulated under recorded controllers, plus two evaluations over it — open
+loop for dynamics models, closed loop for controllers. It depends on `i4b`; nothing here depends
+on it. See [`benchmark/README.md`](benchmark/README.md).
+
+Not to be confused with [Benchmarking](#throughput-benchmarks) below, which measures this
+simulator's own throughput.
+
 ---
 
 ## Table of Contents
@@ -26,7 +36,7 @@ Core capabilities:
 6. [Scan-Based Rollout API](#scan-based-rollout-api)
 7. [Domain Randomization](#domain-randomization)
 8. [Framework Export (PyTorch / TF / CuPy)](#framework-export)
-9. [Benchmarking](#benchmarking)
+9. [Throughput benchmarks](#throughput-benchmarks)
 10. [Single-Env Gymnasium Interface](#single-env-gymnasium-interface)
 11. [YAML Configuration](#yaml-configuration)
 12. [GPU-Native PPO Training](#gpu-native-ppo-training)
@@ -315,7 +325,7 @@ This makes i4b compatible with any GPU-native RL framework (CleanRL, TorchRL, sa
 
 ---
 
-## Benchmarking
+## Throughput benchmarks
 
 Two benchmark scripts are provided. Both isolate JAX backends in subprocesses to avoid cross-contamination.
 

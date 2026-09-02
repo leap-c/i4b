@@ -35,10 +35,13 @@ cuda = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["i4b", "i4b.evaluation", "i4b_data"]
+packages = ["i4b", "i4b_data"]
 
 [tool.uv]
 dev-dependencies = []
+
+[tool.uv.workspace]
+members = ["benchmark"]
 
 [dependency-groups]
 notebooks = [
@@ -46,15 +49,10 @@ notebooks = [
     "plotly>=6.4",
     "pyarrow",
 ]
-bench-data = [
-    "openpyxl>=3.1",
-    "pyarrow>=17.0",
-    "requests>=2.32",
-]
 dev = [
     "pytest>=8.0",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
+testpaths = ["benchmark/tests"]
+pythonpath = ["benchmark", "benchmark/data"]

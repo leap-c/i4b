@@ -1,0 +1,29 @@
+# One building, three windows. For CI, and for checking a method runs at all.
+#
+# `start` is a date (midnight UTC) or a datetime on the corpus' 15-minute grid, so a window can
+# be anchored to a time of day -- an early-morning recovery reads very differently from an
+# afternoon one.
+
+common:
+  split: test
+  view: realistic
+  use_forecast: true
+  horizon_hours: 24
+  context_days: [1, 2, 5, 21]
+  probes: 5
+  probe_amplitude: 6.0
+  forecast_correction: 0.0
+
+scenarios:
+  window001:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-06-18 09:00:00
+    controller: mpc-nominal
+  window002:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-10-10 05:00:00
+    controller: mpc-offset-plus-2K
+  window003:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2026-02-01 17:30:00
+    controller: mpc-offset-minus-2K

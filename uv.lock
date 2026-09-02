@@ -17,6 +17,12 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[manifest]
+members = [
+    "i4b",
+    "i4b-bench",
+]
+
 [[package]]
 name = "absl-py"
 version = "2.5.0"
@@ -1025,11 +1031,6 @@ rl = [
 ]
 
 [package.dev-dependencies]
-bench-data = [
-    { name = "openpyxl" },
-    { name = "pyarrow" },
-    { name = "requests" },
-]
 dev = [
     { name = "pytest" },
 ]
@@ -1059,16 +1060,60 @@ requires-dist = [
 provides-extras = ["mpc", "rl", "cpu", "cuda"]
 
 [package.metadata.requires-dev]
-bench-data = [
-    { name = "openpyxl", specifier = ">=3.1" },
-    { name = "pyarrow", specifier = ">=17.0" },
-    { name = "requests", specifier = ">=2.32" },
-]
 dev = [{ name = "pytest", specifier = ">=8.0" }]
 notebooks = [
     { name = "marimo", specifier = ">=0.24.0" },
     { name = "plotly", specifier = ">=6.4" },
     { name = "pyarrow" },
+]
+
+[[package]]
+name = "i4b-bench"
+version = "0.1.0"
+source = { editable = "benchmark" }
+dependencies = [
+    { name = "i4b" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyarrow" },
+    { name = "pyyaml" },
+]
+
+[package.optional-dependencies]
+generation = [
+    { name = "openpyxl" },
+    { name = "requests" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+notebooks = [
+    { name = "marimo" },
+    { name = "plotly" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "i4b", editable = "." },
+    { name = "numpy", specifier = ">=2.2" },
+    { name = "openpyxl", marker = "extra == 'generation'", specifier = ">=3.1" },
+    { name = "pandas", specifier = ">=2.3" },
+    { name = "pyarrow", specifier = ">=17.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "requests", marker = "extra == 'generation'", specifier = ">=2.32" },
+]
+provides-extras = ["generation"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+notebooks = [
+    { name = "marimo", specifier = ">=0.24.0" },
+    { name = "plotly", specifier = ">=6.4" },
 ]
 
 [[package]]
