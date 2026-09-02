@@ -1,7 +1,10 @@
 # I4B Benchmark Dataset Schema (v2)
 
 Reference for building fine-tuning datasets and evaluation loops on the canonical
-I4B benchmark corpus.
+I4B benchmark corpus. What the benchmark *measures* over this data is in `EVAL_SPEC.md`.
+
+Paths below are relative to the corpus directory, which lives at `data/corpus/` in this
+repository and is what `load_dataset()` finds by default.
 
 ## Directory Layout
 
@@ -24,9 +27,17 @@ I4B benchmark corpus.
     mpc-aprbs-medium.parquet
     mpc-aprbs-high.parquet
     open-loop-aprbs.parquet
+  transitions/
+    part-00000.parquet ... part-00037.parquet
   forecasts.parquet
   prices.parquet
 ```
+
+`transitions/` holds the states themselves, sharded; `trajectories.parquet` is the index into it.
+`controllers/` holds seven replay tables, not eleven: the four `open-loop-aprbs-<n>K` excitation
+levels are training data rather than baselines anything is scored against, and duplicating them
+here would add ~1.5 GB of redundancy. They are present in `transitions/` and `trajectories.parquet`
+like every other trajectory.
 
 ## Key Concepts
 
@@ -76,7 +87,7 @@ and high share the same normalized waveform (only the amplitude differs).
 The four `open-loop-aprbs-<n>K` levels share the waveform of `open-loop-aprbs`, so together with
 it they form an amplitude ladder over one realisation. They exist as training data for studying
 how much excitation a dynamics model needs, and have no `controllers/` replay table — see
-`scripts/finalize_excitation_levels.py`. The plant clips roughly 65-70% of the commanded steps at
+`data/scripts/finalize_excitation_levels.py`. The plant clips roughly 65-70% of the commanded steps at
 every level, which takes a near-constant fractional bite, so delivered excitation still scales
 with the amplitude.
 
