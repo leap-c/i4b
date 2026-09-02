@@ -65,9 +65,20 @@ All MPC controllers re-solve every 15 minutes from the current state with a
 | `mpc-aprbs-medium`     | Symmetric APRBS residual, amplitude 1.5 K        |
 | `mpc-aprbs-high`       | Symmetric APRBS residual, amplitude 3.0 K        |
 | `open-loop-aprbs`      | Replays nominal action + 1.5 K APRBS, no re-solve|
+| `open-loop-aprbs-3K`   | As `open-loop-aprbs`, amplitude 3 K              |
+| `open-loop-aprbs-6K`   | As `open-loop-aprbs`, amplitude 6 K              |
+| `open-loop-aprbs-12K`  | As `open-loop-aprbs`, amplitude 12 K             |
+| `open-loop-aprbs-24K`  | As `open-loop-aprbs`, amplitude 24 K             |
 
 APRBS waveforms are deterministic from building and period identity. Low, medium,
 and high share the same normalized waveform (only the amplitude differs).
+
+The four `open-loop-aprbs-<n>K` levels share the waveform of `open-loop-aprbs`, so together with
+it they form an amplitude ladder over one realisation. They exist as training data for studying
+how much excitation a dynamics model needs, and have no `controllers/` replay table — see
+`scripts/finalize_excitation_levels.py`. The plant clips roughly 65-70% of the commanded steps at
+every level, which takes a near-constant fractional bite, so delivered excitation still scales
+with the amplitude.
 
 ### Variable Categories
 
@@ -275,7 +286,7 @@ Time-only split (all families in every split):
 
 ## Join Keys
 
-The v2 schema factors the data to avoid duplicating weather across 7 controllers.
+The v2 schema factors the data to avoid duplicating weather across all 11 controllers.
 The primary join paths are:
 
 ```
@@ -401,8 +412,13 @@ or evaluating comfort.
 ## Scale
 
 ```
-191 buildings x 7 controllers x 2 periods = 2,674 trajectories
+191 buildings x 11 controllers x 2 periods = 4,202 trajectories
 35,039 rows per trajectory
-~93.7 million transitions total
-~4-7 GB estimated storage
+147,233,878 transitions total
+~6.8 GB on disk
 ```
+
+The 191 buildings span 64 families and 7 countries; a building under one weather period is a
+*scenario*, so there are 382 of those. `split.parquet` assigns whole families, and covers one
+period per building — 2,101 of the 4,202 trajectories — so no building is trained on in one
+weather year and tested in the other.

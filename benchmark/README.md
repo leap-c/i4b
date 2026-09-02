@@ -1,8 +1,9 @@
 # The I4B benchmark
 
 A benchmark for **dynamics models and controllers of heat-pump-heated buildings**, over a corpus
-of 382 simulated single-family houses drawn from the TABULA typology, each run for a year of real
-weather under seven recorded controllers.
+of 191 single-family houses drawn from the TABULA typology, each simulated for two years of real
+weather under eleven recorded controllers — 382 building-years, 4,202 trajectories, 147 million
+transitions.
 
 Everything the benchmark needs lives in this directory: the library, the corpus construction, the
 settings, the scripts, the specs, the notebooks and the data. It depends on `i4b` — the simulator

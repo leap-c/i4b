@@ -65,7 +65,7 @@ The two sets differ in what they cost, not in what they measure:
 | set | open loop | closed loop |
 | --- | --- | --- |
 | `fast_eval` | 1 building, 3 windows, 1 context length | 1 building, 1 day |
-| `benchmark` | 30 buildings x 20 windows, 4 context lengths | 10 buildings, 14 days each |
+| `benchmark` | 30 buildings x 20 windows x 4 context lengths = 2,400 rows | 10 buildings, 14 days each |
 
 The two loops scale different things because they cost differently. An open-loop window is a few
 plant rollouts, so sampling more of them is nearly free and is the only way to get error bars on
@@ -74,10 +74,14 @@ controller is ~2 s — a year across 30 buildings is over 500 hours. Episodes ar
 the closed-loop set is meant to be distributed. Its ten starts are spread through the year, since
 a controller that handles January is not thereby known to handle a shoulder season.
 
-The open-loop set cycles the seven recorded controllers, so the same building appears under
+The open-loop set cycles the seven MPC-derived controllers, so the same building appears under
 nominal, offset and APRBS-excited histories. How much the control moved in the context is the
 strongest predictor of whether a model can identify the dynamics from it, and `excitation` is a
-column in the results for exactly that reason.
+column in the results for exactly that reason. The corpus also holds four `open-loop-aprbs-<n>K`
+excitation levels; those are training data, not problem instances, and no setting names them.
+
+Each window also names a time of day, dealt round-robin within each controller over eight slots
+three hours apart, so excitation is not confounded with the thermal regime a window starts in.
 
 ## Scenario identifiers
 
