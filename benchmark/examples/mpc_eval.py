@@ -2,9 +2,9 @@
 """Example: evaluate the i4b CasADi MPC controller on a benchmark scenario.
 
 Usage:
-    python scripts/evaluation/example_mpc_eval.py \
+    uv run python examples/mpc_eval.py \
         --dataset production \
-        --scenario "sfh_1984_de_1--period_a" \
+        --scenario "BG.N.SFH.01.Gen.ReEx.001.001--period_a" \
         --steps 96
 
 The MPC controller uses only the forecast (oracle weather) and ignores
@@ -17,14 +17,12 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+from i4b_bench import eval_scenario_closed_loop, load_dataset
+from i4b_bench.corpus import load_params
 
 import i4b.models.model_hvac as model_hvac
-from i4b_bench.corpus import load_params
-from i4b.models.model_buildings import Building
 from i4b.controller.mpc.casadi_framework import MPC_solver
-
-from i4b_bench import load_dataset
-from i4b_bench import eval_scenario_closed_loop
+from i4b.models.model_buildings import Building
 
 
 def make_mpc_controller(building_params: dict, horizon: int = 12):
@@ -45,10 +43,10 @@ def make_mpc_controller(building_params: dict, horizon: int = 12):
     hp_model = model_hvac.Heatpump_AW(mdot_HP=mdot_hp)
 
     # MPC problem dimensions for 4R3C
-    nx = 3   # T_room, T_wall, T_hp_ret
-    npar = 4 # T_amb, Qdot_gains, T_room_set_lower, grid_signal
-    nc = 4   # constraints
-    ns = 2   # slack variables
+    nx = 3  # T_room, T_wall, T_hp_ret
+    npar = 4  # T_amb, Qdot_gains, T_room_set_lower, grid_signal
+    nc = 4  # constraints
+    ns = 2  # slack variables
     h = 900  # timestep in seconds
 
     mpc = MPC_solver(
@@ -89,12 +87,14 @@ def make_mpc_controller(building_params: dict, horizon: int = 12):
             T_amb_forecast[n_copy:] = T_amb_forecast[n_copy - 1]
             Qdot_forecast[n_copy:] = Qdot_forecast[n_copy - 1]
 
-        P = np.column_stack([
-            T_amb_forecast,
-            Qdot_forecast / 1000.0,      # MPC expects kW
-            np.full(n_needed, 20.0),      # T_room_set_lower
-            np.ones(n_needed),            # grid signal (constant = energy-efficient mode)
-        ])
+        P = np.column_stack(
+            [
+                T_amb_forecast,
+                Qdot_forecast / 1000.0,  # MPC expects kW
+                np.full(n_needed, 20.0),  # T_room_set_lower
+                np.ones(n_needed),  # grid signal (constant = energy-efficient mode)
+            ]
+        )
 
         # Solve MPC
         mpc.update_NLP(xk)
@@ -111,10 +111,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, default=Path("production"))
     parser.add_argument("--scenario", type=str, required=True)
-    parser.add_argument("--steps", type=int, default=96,
-                        help="Number of evaluation steps (default: 96 = 1 day)")
-    parser.add_argument("--horizon", type=int, default=12,
-                        help="MPC horizon in steps (default: 12 = 3 hours)")
+    parser.add_argument(
+        "--steps", type=int, default=96, help="Number of evaluation steps (default: 96 = 1 day)"
+    )
+    parser.add_argument(
+        "--horizon", type=int, default=12, help="MPC horizon in steps (default: 12 = 3 hours)"
+    )
     parser.add_argument("--max-context-length", type=int, default=96)
     args = parser.parse_args()
 
@@ -122,9 +124,7 @@ def main():
     dataset = load_dataset(args.dataset)
 
     # Extract building params for this scenario
-    scenario_row = dataset.scenarios[
-        dataset.scenarios["scenario_id"] == args.scenario
-    ].iloc[0]
+    scenario_row = dataset.scenarios[dataset.scenarios["scenario_id"] == args.scenario].iloc[0]
     building_id = scenario_row["building_id"]
     building_params = load_params(dataset.buildings, building_id)
 
@@ -152,7 +152,9 @@ def main():
     traj = results["trajectory"]
     print(f"\nTrajectory: {len(traj)} rows")
     print(f"  T_room range: [{traj['T_room'].min():.2f}, {traj['T_room'].max():.2f}] C")
-    print(f"  Supply range:  [{traj['T_hp_sup_applied'].min():.2f}, {traj['T_hp_sup_applied'].max():.2f}] C")
+    print(
+        f"  Supply range:  [{traj['T_hp_sup_applied'].min():.2f}, {traj['T_hp_sup_applied'].max():.2f}] C"
+    )
 
 
 if __name__ == "__main__":

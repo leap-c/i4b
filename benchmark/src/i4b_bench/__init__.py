@@ -38,7 +38,6 @@ from .observation import (
     DISTURBANCE_CHANNELS,
     PLANT_STATE_CHANNELS,
     STATE_CHANNELS,
-    TARGET_CHANNELS,
     ObsView,
     build_observation,
 )
@@ -59,7 +58,6 @@ __all__ = [
     "EXCITATION",
     "EXCITATION_DTYPE",
     "STATE_CHANNELS",
-    "TARGET_CHANNELS",
     "BenchmarkDataset",
     "ClosedLoopBenchmark",
     "OpenLoopBenchmark",

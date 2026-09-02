@@ -10,8 +10,6 @@ def _():
 
     import marimo as mo
     import numpy as np
-    import pandas as pd
-    import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -99,9 +97,10 @@ def _(horizon_select, mo, steps_select):
 @app.cell
 def _(dataset, mo, scenario_select):
     from i4b_bench.corpus import load_params
-    from i4b.models.model_buildings import Building
+
     import i4b.models.model_hvac as model_hvac
     from i4b.controller.mpc.casadi_framework import MPC_solver
+    from i4b.models.model_buildings import Building
 
     scenario_id = scenario_select.value
     scenario_row = dataset.scenarios[

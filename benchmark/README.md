@@ -62,7 +62,8 @@ src/i4b_bench/        the library
   corpus.py             building parameters, disturbances, reference weather
   generation.py         how the corpus is *made*; the rest of the package never imports it
   config/               the settings, one YAML per named set per loop -- see config/README.md
-scripts/              building, finalizing and reporting on the corpus
+scripts/              building and finalizing the corpus
+examples/             a worked controller, run end to end
 specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is
                       measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
 notebooks/            marimo notebooks over the corpus and its source data

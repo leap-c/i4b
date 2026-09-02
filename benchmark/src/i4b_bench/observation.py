@@ -24,10 +24,6 @@ PLANT_STATE_CHANNELS = ("T_room", "T_wall", "T_hp_ret")
 
 CONTROL_CHANNELS = ("T_hp_sup_applied",)
 
-#: What a learned model predicts. `T_wall` stays out under both views; a method may still return
-#: it, since nothing caps what the returned dict contains.
-TARGET_CHANNELS = ("T_room", "T_hp_ret")
-
 #: How much of the state each view exposes. `realistic` withholds the wall node -- nothing
 #: measures a wall -- so a method there infers the thermal mass from its own history.
 STATE_CHANNELS: dict[ObsView, tuple[str, ...]] = {

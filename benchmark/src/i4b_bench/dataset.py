@@ -303,14 +303,6 @@ def step_of(dataset, scenario_id: str, when: date | datetime | str) -> int:
     return step
 
 
-def timestamp_of(dataset, scenario_id: str, step: int) -> pd.Timestamp:
-    """The timestamp of a step within a scenario -- the inverse of `step_of`."""
-    row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
-    if row.empty:
-        raise KeyError(f"unknown scenario {scenario_id!r}")
-    return pd.Timestamp(row.iloc[0]["start_time_utc"]) + step * STEP
-
-
 def scenario_metadata(dataset, scenario_id: str) -> dict:
     """What a scenario *is*, so a result row can be read without joining back to the corpus.
 

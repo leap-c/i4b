@@ -31,7 +31,7 @@ APRBS_AMPLITUDE_C = 1.5
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", type=Path, default=Path("i4b-benchmark"))
+    parser.add_argument("--dataset", type=Path, default=Path("production"))
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--max-jobs", type=int)
     return parser.parse_args()
