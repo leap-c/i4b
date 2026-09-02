@@ -4,7 +4,7 @@ Acquires TABULA building records, Open-Meteo reference weather and archived
 forecast runs, and Energy-Charts day-ahead electricity prices. Normalizes
 each into typed Parquet tables with checksummed provenance manifests. This
 script only prepares source data; it does not touch I4B simulation code and
-is never imported by it. See tickets/source-data-acquisition.md.
+is never imported by it.
 
 Usage:
     python scripts/prepare_benchmark_data.py \\

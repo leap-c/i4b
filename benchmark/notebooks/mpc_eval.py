@@ -31,7 +31,7 @@ def _(mo):
 @app.cell
 def _(Path, mo):
     try:
-        default = Path(__file__).resolve().parents[2] / "production"
+        default = Path(__file__).resolve().parents[1] / "production"
     except NameError:
         default = Path("production").resolve()
     dataset_input = mo.ui.text(

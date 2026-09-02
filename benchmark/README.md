@@ -68,7 +68,6 @@ specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (w
                       measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
 notebooks/            marimo notebooks over the corpus and its source data
 tests/                the contract: the import boundary, the views, gain calibration, leakage
-tickets/              design notes for the dataset and its acquisition
 production/           the corpus itself -- generated, gitignored
 source-data/          TABULA workbooks and downloaded weather -- fetched, gitignored
 ```

@@ -20,6 +20,7 @@ from i4b_bench.corpus import (
     read_reference_weather,
 )
 from i4b_bench.generation import aprbs
+from i4b_bench.observation import internal_gain_profile
 
 from i4b.gym_interface.room_env import RoomHeatEnv
 
@@ -131,8 +132,7 @@ def _job(job: tuple[str, str]) -> dict:
         "dni_W_m2": "dni",
         "dhi_W_m2": "dhi",
     })
-    profile = _root / "i4b_data/profiles/InternalGains/ResidentialDetached.csv"
-    disturbances = prepare_disturbances(weather, params, profile)
+    disturbances = prepare_disturbances(weather, params, internal_gain_profile())
     nominal_id = f"{building_id}--{period_id}--mpc-nominal"
     nominal_path = _dataset / ".staging" / f"{nominal_id}.parquet"
     if not nominal_path.exists():

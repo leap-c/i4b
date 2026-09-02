@@ -14,6 +14,7 @@ def _():
     import plotly.graph_objects as go
     from i4b_bench.corpus import prepare_disturbances
     from i4b_bench.generation import aprbs
+    from i4b_bench.observation import internal_gain_profile
     from numpy.lib.stride_tricks import sliding_window_view as swv
     from plotly.subplots import make_subplots
 
@@ -29,6 +30,7 @@ def _():
         make_subplots,
         mo,
         np,
+        internal_gain_profile,
         pd,
         prepare_disturbances,
         swv,
@@ -186,6 +188,7 @@ def _(
     aprbs,
     building_ui,
     hold_ui,
+    internal_gain_profile,
     np,
     pd,
     prepare_disturbances,
@@ -204,7 +207,7 @@ def _(
     _disturb = prepare_disturbances(
         _weather,
         _params,
-        repo / "i4b_data/profiles/InternalGains/ResidentialDetached.csv",
+        internal_gain_profile(),
     ).loc[start_ui.value : stop_ui.value]
 
     _env = RoomHeatEnv(
