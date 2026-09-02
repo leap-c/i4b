@@ -32,8 +32,19 @@ things. `mae_K` asks whether the prediction tracks the building. `gain` asks whe
 the control moves: roll the plant under perturbed controls, and regress the model's predicted
 deviation on the plant's — 1.0 responds exactly as the plant does, 0.0 ignores the control
 entirely. Both numbers are needed, because a model can be accurate and still useless inside a
-controller — and on this corpus the two come apart sharply. Zero-shot Chronos-2 on the current
-set:
+controller. On this corpus the two come apart sharply, and in opposite directions:
+
+| at a 21 d context | `mae_K` | `gain` |
+| --- | --- | --- |
+| Chronos-2, zero-shot | **0.225** | 0.127 |
+| multi-step linear | 0.324 | **0.603** |
+
+The foundation model predicts the room a third more accurately and has roughly a fifth of the
+control response. A benchmark reporting only accuracy would rank them the wrong way round for
+anything that has to plan — and in an earlier evaluation the linear model duly beat Chronos-2 in
+the closed loop, 1095 against 1596.
+
+Context and excitation both matter, and for different metrics. Zero-shot Chronos-2:
 
 | context | 1 d | 2 d | 5 d | 21 d |
 | --- | --- | --- | --- | --- |
@@ -41,11 +52,9 @@ set:
 | `gain`, nominal-MPC context | 0.004 | 0.002 | 0.007 | 0.011 |
 | `gain`, open-loop-APRBS context | 0.035 | 0.088 | 0.173 | 0.244 |
 
-Accuracy improves steadily with context while control response stays near zero unless the
-history was excited — a model that tracks the room to a quarter of a Kelvin and still barely
-notices the heat pump. In an earlier evaluation, a multi-step linear model with far worse
-accuracy beat Chronos-2 in the closed loop, 1095 against 1596. Ranking on accuracy alone gets
-that backwards.
+Accuracy improves steadily with more history; control response stays near zero unless that
+history was *excited*. An MPC's action is a function of the state it reacts to, so its effect is
+confounded with the state; an open-loop APRBS is not.
 
 **Closed loop** runs a controller against the plant for an episode and reports energy, comfort
 violation, and planning time — the last because a controller that wins on comfort by thinking for
