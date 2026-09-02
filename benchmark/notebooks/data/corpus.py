@@ -31,7 +31,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Path, mo):
     try:
-        default = Path(__file__).resolve().parents[1] / "data" / "corpus"
+        default = Path(__file__).resolve().parents[2] / "data" / "corpus"
     except NameError:
         default = Path("data/corpus").resolve()
     directory_input = mo.ui.text(value=str(default), label="Dataset directory", full_width=True)

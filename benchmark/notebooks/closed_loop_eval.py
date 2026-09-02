@@ -19,7 +19,7 @@ def _():
 @app.cell
 def _(mo):
     mo.md("""
-    # MPC Controller Evaluation
+    # Closed-loop evaluation
 
     Evaluate the i4b CasADi MPC controller on a benchmark scenario using the
     closed-loop evaluation framework. The MPC re-solves from the current state

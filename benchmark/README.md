@@ -82,8 +82,8 @@ data/                 the dataset and everything that builds it -- see data/READ
   corpus/               the built dataset -- generated, gitignored
 specs/                DATA_SCHEMA.md (what the corpus contains), EVAL_SPEC.md (what is
                       measured), IMPLICIT_ASSUMPTIONS.md (what is true but unenforced)
-notebooks/            marimo notebooks over the corpus, its source data, and a worked
-                      MPC controller run end to end (mpc_eval.py)
+notebooks/            open_loop_eval.py, closed_loop_eval.py -- each loop run end to end
+  data/                 reviews of the corpus, the source data and the forecasts
 tests/                the contract: the import boundary, the views, gain calibration, leakage
 ```
 

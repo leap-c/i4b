@@ -122,7 +122,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Path, mo):
     try:
-        default_source = Path(__file__).resolve().parents[1] / "data" / "source"
+        default_source = Path(__file__).resolve().parents[2] / "data" / "source"
     except NameError:
         default_source = Path("data/source").resolve()
     source_input = mo.ui.text(

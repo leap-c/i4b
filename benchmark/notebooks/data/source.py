@@ -195,7 +195,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(Path, mo):
     try:
-        _default = Path(__file__).resolve().parents[1] / "data" / "source"
+        _default = Path(__file__).resolve().parents[2] / "data" / "source"
     except NameError:
         _default = Path("data/source").resolve()
 
