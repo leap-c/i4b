@@ -8,6 +8,7 @@ have caught the crash fixed in 861cf96.
 """
 
 import importlib.util
+import itertools
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -19,6 +20,7 @@ from i4b_bench import (
     STATE_CHANNELS,
     ScenarioEnv,
     control_gain,
+    load_controller_data,
     load_dataset,
 )
 from i4b_bench.observation import history_channels
@@ -165,3 +167,81 @@ def test_prepare_disturbances_matches_the_plant_contract(dataset):
     )
     wide = prepare_disturbances(weather, params, internal_gain_profile(), keep_irradiance=True)
     assert set(wide.columns) == {"T_amb", "Qdot_gains", "ghi", "dni", "dhi"}
+
+
+@needs_dataset
+def test_a_predictor_that_replays_the_plant_scores_a_perfect_gain(dataset):
+    """The end-to-end calibration: replay the plant and the harness must say so.
+
+    `test_gain_is_calibrated` checks the formula on synthetic arrays. This checks the whole path
+    -- which control the predictor is handed, how the probes are rolled, how history is sliced
+    for each context -- by driving the real plant and demanding the answer come back exact.
+
+    It is the test that would have caught the predictor being handed the *requested* probe plans
+    while the plant clipped them: a replayed plant scored 0.4 rather than 1.0, because the model
+    was being asked about an intervention that never happened.
+    """
+    from i4b_bench import ScenarioEnv, eval_benchmark_open_loop, open_loop_setting
+    from i4b_bench.dataset import PER_DAY, step_of
+
+    setting = open_loop_setting("fast_eval")
+    context = round(setting.context_days[0] * PER_DAY)
+    horizon = round(setting.horizon_hours * 4)
+    # the harness drives windows grouped by building, and once per context length, so cycle the
+    # same order rather than assuming the setting's own
+    order = [w for _, w in sorted(setting.scenarios.items(), key=lambda kv: (kv[1].building, kv[0]))]
+    seen = itertools.cycle(order)
+
+    def oracle(observations, controls):
+        out = []
+        for plans in controls:
+            window = next(seen)
+            env = ScenarioEnv(
+                window.building, dataset=dataset, initial_controller_id=window.controller,
+                max_context_length=context, planning_steps=horizon,
+                start_step=step_of(dataset, window.building, window.start),
+                use_forecast=setting.use_forecast, view=setting.view,
+                forecast_correction=setting.forecast_correction, build_observation=False,
+            )
+            predicted = np.empty_like(plans)
+            for k, plan in enumerate(plans):
+                env.reset()
+                for t, action in enumerate(plan):
+                    predicted[k, t] = env.step(float(action))[4]["T_room"]
+            out.append({"T_room": predicted})
+        return out
+
+    frame = eval_benchmark_open_loop(oracle, dataset=dataset, setting=setting)
+    assert frame["mae_K"].max() == pytest.approx(0.0, abs=1e-9)
+    assert frame["gain"].min() == pytest.approx(1.0, abs=1e-9)
+
+
+@needs_dataset
+def test_every_recorded_controller_can_seed_a_context(dataset):
+    """Every trajectory the corpus records must be loadable.
+
+    The corpus used to keep a second, partial copy of these columns under `controllers/`, and
+    `load_controller_data` read only that -- so naming an excitation level in a setting raised
+    FileNotFoundError. `transitions/` is now the one store, and this asserts it covers everything.
+    """
+    scenario = dataset.trajectories["scenario_id"].iloc[0]
+    controllers = sorted(dataset.trajectories["controller_id"].unique())
+    for controller in controllers:
+        frame = load_controller_data(dataset, controller, scenario)
+        assert not frame.empty, controller
+
+
+@needs_dataset
+def test_controllers_are_interchangeable_as_a_context(dataset):
+    """Every controller yields the same schema, so a setting may name any of them.
+
+    The excitation levels used to differ from the rest by which file they lived in; nothing
+    about them should differ now.
+    """
+    scenario = dataset.trajectories["scenario_id"].iloc[0]
+    frames = {
+        controller: load_controller_data(dataset, controller, scenario)
+        for controller in ("mpc-nominal", "open-loop-aprbs", "open-loop-aprbs-6K")
+    }
+    shapes = {name: (list(f.columns), len(f)) for name, f in frames.items()}
+    assert len(set(map(str, shapes.values()))) == 1, shapes

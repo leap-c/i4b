@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 from .observation import (
     CONTROL_CHANNELS,
     DISTURBANCE_CHANNELS,
+    PLANT_STATE_CHANNELS,
     STATE_CHANNELS,
     ObsView,
 )
@@ -75,7 +76,8 @@ class BenchmarkDataset(NamedTuple):
     exogenous: pd.DataFrame
     split: pd.DataFrame
     forecasts: pd.DataFrame
-    controllers_dir: Path
+    #: The corpus directory. `transitions/` under it is the one store of trajectory states.
+    root: Path
 
 
 def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
@@ -98,7 +100,7 @@ def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
         exogenous=exogenous,
         split=pd.read_parquet(d / "split.parquet"),
         forecasts=forecasts,
-        controllers_dir=d / "controllers",
+        root=d,
     )
 
 
@@ -150,15 +152,30 @@ def load_controller_data(
     scenario_id : str
         The building, e.g. ``"BG.N.SFH.02.Gen.ReEx.001.001--period_b"``.
 
+    Reads `transitions/`, the one store of trajectory states, so every recorded controller is
+    reachable the same way.
+
     Returns
     -------
     pandas.DataFrame
         The controller's states and actions, timestamp-sorted, joined with the scenario's
         exogenous channels.
     """
-    path = dataset.controllers_dir / f"{controller_id}.parquet"
-    frame = pd.read_parquet(path, filters=[("scenario_id", "==", scenario_id)])
-    frame["timestamp_utc"] = pd.to_datetime(frame["timestamp_utc"], utc=True)
+    row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
+    if row.empty:
+        raise KeyError(f"unknown scenario {scenario_id!r}")
+    frame = read_window(
+        dataset.root,
+        f"{scenario_id}--{controller_id}",
+        row.iloc[0]["start_time_utc"],
+        row.iloc[0]["end_time_utc"],
+    ).reset_index()
+    if frame.empty:
+        raise KeyError(f"no trajectory {scenario_id}--{controller_id}")
+    frame["timestamp_utc"] = frame["timestamp_utc"].dt.tz_localize("UTC")
+    frame["scenario_id"] = scenario_id
+    # the shards carry the disturbances too; the exogenous join below is the authority on them
+    frame = frame.drop(columns=[c for c in _ALL_DISTURBANCE_COLS if c in frame])
 
     exo = dataset.exogenous[dataset.exogenous["scenario_id"] == scenario_id][
         ["timestamp_utc"] + list(_ALL_DISTURBANCE_COLS)
@@ -166,7 +183,17 @@ def load_controller_data(
     exo["timestamp_utc"] = pd.to_datetime(exo["timestamp_utc"], utc=True)
 
     frame = frame.merge(exo, on="timestamp_utc", how="left")
-    return frame.sort_values("timestamp_utc", ignore_index=True)
+    # One column order for both paths, derived from the channel constants rather than from
+    # whichever file the rows came out of.
+    order = [
+        "trajectory_id",
+        "scenario_id",
+        "timestamp_utc",
+        *PLANT_STATE_CHANNELS,
+        *CONTROL_CHANNELS,
+        *_ALL_DISTURBANCE_COLS,
+    ]
+    return frame[order].sort_values("timestamp_utc", ignore_index=True)
 
 
 def utc(value) -> pd.Timestamp:

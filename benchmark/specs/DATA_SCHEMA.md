@@ -19,25 +19,18 @@ repository and is what `load_dataset()` finds by default.
   split.parquet
   ablation-splits/
     time.parquet
-  controllers/
-    mpc-nominal.parquet
-    mpc-offset-plus-2K.parquet
-    mpc-offset-minus-2K.parquet
-    mpc-aprbs-low.parquet
-    mpc-aprbs-medium.parquet
-    mpc-aprbs-high.parquet
-    open-loop-aprbs.parquet
   transitions/
     part-00000.parquet ... part-00037.parquet
   forecasts.parquet
   prices.parquet
 ```
 
-`transitions/` holds the states themselves, sharded; `trajectories.parquet` is the index into it.
-`controllers/` holds seven replay tables, not eleven: the four `open-loop-aprbs-<n>K` excitation
-levels are training data rather than baselines anything is scored against, and duplicating them
-here would add ~1.5 GB of redundancy. They are present in `transitions/` and `trajectories.parquet`
-like every other trajectory.
+`transitions/` is the one store of trajectory states; `trajectories.parquet` is the index into
+it, and `shard_index` turns a `trajectory_id` into a single-file read. Earlier corpora also kept a
+per-controller copy under `controllers/`, holding the same state columns for seven of the eleven
+controllers. It saved 12% on a read, cost 2.7 GB, and meant a trajectory could exist in one store
+and not the other -- which is exactly what happened, and made the excitation levels unusable as
+evaluation contexts. It is gone; `load_controller_data` reads the shards for every controller.
 
 ## Key Concepts
 
@@ -86,7 +79,7 @@ and high share the same normalized waveform (only the amplitude differs).
 
 The four `open-loop-aprbs-<n>K` levels share the waveform of `open-loop-aprbs`, so together with
 it they form an amplitude ladder over one realisation. They exist as training data for studying
-how much excitation a dynamics model needs, and have no `controllers/` replay table — see
+how much excitation a dynamics model needs — see
 `data/scripts/finalize_excitation_levels.py`. The plant clips roughly 65-70% of the commanded steps at
 every level, which takes a near-constant fractional bite, so delivered excitation still scales
 with the amplitude.
@@ -103,7 +96,7 @@ The dataset distinguishes three categories of variables:
 
 In the v2 schema these are stored separately:
 
-- `controllers/<id>.parquet` contains **state + action** per trajectory.
+- `transitions/` contains **state + action + disturbances** per trajectory.
 - `exogenous.parquet` contains **exogenous** variables per scenario (shared
   across all controllers for the same building and period).
 
@@ -219,19 +212,6 @@ same scenario. **Not duplicated per controller.**
 | `T_amb`              | float32   | Ambient temperature as used by the simulator|
 | `Qdot_gains`         | float32   | Total thermal gains (internal + solar) [W]  |
 
-### `controllers/<controller_id>.parquet`
-
-One file per controller. Contains state and applied action trajectories.
-
-| Column              | Type      | Description                             |
-|---------------------|-----------|-----------------------------------------|
-| `trajectory_id`     | string    | References `trajectories.parquet`       |
-| `scenario_id`       | string    | References `scenarios.parquet`          |
-| `timestamp_utc`     | timestamp | Timestep                               |
-| `T_room`            | float32   | Room temperature [C] (state)            |
-| `T_wall`            | float32   | Wall temperature [C] (state)            |
-| `T_hp_ret`          | float32   | Heat-pump return temperature [C] (state)|
-| `T_hp_sup_applied`  | float32   | Applied supply temperature [C] (action) |
 
 ### `forecasts.parquet`
 
@@ -301,7 +281,6 @@ The v2 schema factors the data to avoid duplicating weather across all 11 contro
 The primary join paths are:
 
 ```
-controllers/<id>.parquet
     |-- trajectory_id --> trajectories.parquet --> building_id, controller_id, period_id
     |-- scenario_id   --> scenarios.parquet    --> location_id, timezone, country_code
     |-- (scenario_id, timestamp_utc) --> exogenous.parquet --> weather, gains
@@ -310,7 +289,7 @@ controllers/<id>.parquet
 To reconstruct the full flat transition table for one controller:
 
 ```python
-controller = pd.read_parquet(f"{DATA_DIR}/controllers/mpc-nominal.parquet")
+controller = load_controller_data(dataset, "mpc-nominal", scenario_id)
 exogenous  = pd.read_parquet(f"{DATA_DIR}/exogenous.parquet")
 full = controller.merge(exogenous, on=["scenario_id", "timestamp_utc"])
 ```

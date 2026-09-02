@@ -9,11 +9,6 @@ Split assignment is inherited, not invented: each new controller clones the buil
 mapping and the time windows of `open-loop-aprbs`, so a building that was held out stays held
 out at every excitation level.
 
-The per-controller replay tables under `controllers/` are deliberately not extended. Those exist
-so the evaluation can replay a *baseline controller*; these levels are open-loop excitation data
-for training, not controllers anything is benchmarked against, and duplicating them there would
-add ~1.5 GB of redundancy.
-
     uv run python scripts/finalize_excitation_levels.py --dataset production
 """
 

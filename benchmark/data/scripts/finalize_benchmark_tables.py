@@ -24,16 +24,6 @@ TRANSITION_COLUMNS = [
     "T_amb",
     "Qdot_gains",
 ]
-CONTROLLER_COLUMNS = [
-    "trajectory_id",
-    "scenario_id",
-    "timestamp_utc",
-    "T_room",
-    "T_wall",
-    "T_hp_ret",
-    "T_hp_sup_applied",
-]
-
 
 def _args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -142,14 +132,6 @@ def _validate_tables(release: Path, scenarios: pd.DataFrame, trajectories: pd.Da
     }
     if not required_exogenous_columns.issubset(exogenous_file.schema.names):
         raise ValueError(f"incomplete exogenous schema: {exogenous_file.schema.names}")
-
-    for controller_id, members in trajectories.groupby("controller_id"):
-        path = release / "controllers" / f"{controller_id}.parquet"
-        parquet_file = pq.ParquetFile(path)
-        if parquet_file.metadata.num_rows != int(members["row_count"].sum()):
-            raise ValueError(f"row count mismatch for controller {controller_id}")
-        if parquet_file.schema.names != CONTROLLER_COLUMNS:
-            raise ValueError(f"invalid controller schema for {controller_id}")
 
     forecast_columns = pq.read_schema(release / "forecasts.parquet").names
     required_forecast_columns = {
@@ -272,21 +254,6 @@ def main() -> None:
     exogenous_path.replace(temporary_output / "exogenous.parquet")
     exogenous_dir.rmdir()
 
-    controller_dir = temporary_output / "controllers"
-    controller_dir.mkdir(exist_ok=True)
-    for controller_id, members in trajectories.groupby("controller_id"):
-        temporary = controller_dir / f".{controller_id}.{os.getpid()}.parquet"
-        writer = None
-        try:
-            for item in members.to_dict("records"):
-                frame = _read_trajectory(transitions, item["trajectory_id"])
-                frame["scenario_id"] = item["scenario_id"]
-                frame = frame[CONTROLLER_COLUMNS]
-                writer = _write_table(writer, frame, temporary)
-        finally:
-            if writer is not None:
-                writer.close()
-        temporary.replace(controller_dir / f"{controller_id}.parquet")
 
     trajectories.to_parquet(
         temporary_output / "trajectories.parquet", index=False, compression="zstd"
@@ -314,12 +281,10 @@ def main() -> None:
                 "scenarios": "scenarios.parquet",
                 "exogenous": "exogenous.parquet",
                 "trajectories": "trajectories.parquet",
-                "controllers": "controllers/*.parquet",
                 "forecasts": "forecasts.parquet",
                 "prices": "prices.parquet",
             },
             "transition_semantics": "state_t + applied_input_t + exogenous_t -> state_(t+1)",
-            "controller_columns": CONTROLLER_COLUMNS,
             "exogenous_columns": [
                 "scenario_id",
                 "timestamp_utc",
