@@ -1,5 +1,8 @@
 # One building, three windows. For CI, and for checking a method runs at all.
 #
+# Not a measurement of anything: three windows say nothing about a method, and two of these sit
+# outside the heating season where a probe cannot move the room.
+#
 # `start` is a date (midnight UTC) or a datetime on the corpus' 15-minute grid, so a window can
 # be anchored to a time of day -- an early-morning recovery reads very differently from an
 # afternoon one.
@@ -12,6 +15,7 @@ common:
   context_days: [1, 2, 5, 21]
   probes: 5
   probe_amplitude: 6.0
+  probe_hold_steps: 8
   forecast_correction: 0.0
 
 scenarios:

@@ -78,5 +78,11 @@ pytest_cache/
 !/benchmark/data/source/manifests/.gitkeep
 /benchmark/data/i4b-benchmark*/
 
+# Compiled evaluation-set artifacts: `cases.parquet` and the manifest fingerprinting it are
+# generated from the corpus by data/scripts/build_open_loop_cases.py and rebuildable from it.
+# The definition beside them is the decision about what the set measures, and is tracked.
+/benchmark/data/evaluation_sets/**/cases.parquet
+/benchmark/data/evaluation_sets/**/manifest.json
+
 # marimo session caches
 __marimo__/

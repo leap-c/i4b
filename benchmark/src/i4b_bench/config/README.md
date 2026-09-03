@@ -1,9 +1,8 @@
 # Benchmark settings
 
-One YAML file per named setting, split by loop:
+The **closed-loop** settings, one YAML file per named setting:
 
 ```
-config/open_loop/    fast_eval.yaml  benchmark.yaml
 config/closed_loop/  fast_eval.yaml  benchmark.yaml
 ```
 
@@ -13,17 +12,15 @@ from i4b_bench import closed_loop_setting, eval_benchmark_closed_loop
 eval_benchmark_closed_loop(controller, setting=closed_loop_setting("benchmark"))
 ```
 
-Each file has two sections. `common` states **every** field of the loop's settings dataclass, so
-reading it tells you the whole setting and nothing is inherited from a default you would have to
-go and look up. `scenarios` names the problem instances, one entry per instance:
+Open-loop sets live elsewhere. They are compiled into a case artifact rather than resolved at
+run time, so a definition sits beside the artifact it produced, under
+`data/evaluation_sets/open_loop/` — see the README there.
 
-| loop | an entry is | fields |
-| --- | --- | --- |
-| open loop | a **window** | `building`, `start`, `controller` |
-| closed loop | an **episode** | `building`, `start`, `end`, `controller` |
-
-`controller` names the recorded run whose history seeds the context — not the method under test,
-which is the argument you pass in.
+Each file has two sections. `common` states **every** field of `ClosedLoopBenchmark`, so reading
+it tells you the whole setting and nothing is inherited from a default you would have to go and
+look up. `scenarios` names the problem instances: an **episode** is a `building`, a `start`, an
+`end` and the `controller` whose recorded run seeds the context at `start` — not the method under
+test, which is the argument you pass in.
 
 Times are written either as a plain date, meaning midnight UTC, or as a datetime naming any point
 on the corpus' 15-minute grid:
@@ -56,47 +53,24 @@ site. `realistic` is what an installation could be built to instrument — raw w
 temperatures a heat pump and a room sensor report — so a method there must infer the thermal mass
 from its own history and the gain from the weather.
 
-Settings live here, in the package, rather than in the dataset directory: they define what the
-benchmark *measures*, which is a decision and belongs under version control, while the dataset
-directory is gitignored.
+These settings live here, in the package, rather than in the dataset directory: they define what
+the benchmark *measures*, which is a decision and belongs under version control. The open-loop
+definitions are equally version-controlled, but sit beside the generated artifact they produce.
 
 The two sets differ in what they cost, not in what they measure:
 
-| set | open loop | closed loop |
-| --- | --- | --- |
-| `fast_eval` | 1 building, 3 windows, 1 context length | 1 building, 1 day |
-| `benchmark` | 30 buildings x 4 windows x 2 controllers x 4 contexts = 960 rows | 10 buildings, 14 days each |
+| set | closed loop |
+| --- | --- |
+| `fast_eval` | 1 building, 1 day |
+| `benchmark` | 10 buildings, 14 days each |
 
-The two loops scale different things because they cost differently. An open-loop window is a few
-plant rollouts, so sampling more of them is nearly free and is the only way to get error bars on
-small differences between methods. A closed-loop step runs the controller, which for a planning
-controller is ~2 s — a year across 30 buildings is over 500 hours. Episodes are independent, so
-the closed-loop set is meant to be distributed. Its ten starts are spread through the year, since
-a controller that handles January is not thereby known to handle a shoulder season.
-
-The open-loop set uses **two** controllers, `mpc-nominal` and `open-loop-aprbs`, because measured
-zero-shot they span almost the whole range of control response on their own — gain 0.15 → 0.44
-across the context ladder under the first against 0.89 → 0.99 under the second. An MPC's action is
-a function of the state it is reacting to, so its effect is confounded with the state; an
-open-loop APRBS is not. The five intermediate MPC excitations landed between those two and cost
-five sevenths of the runtime to say so. The corpus also holds four `open-loop-aprbs-<n>K` levels;
-those are training data, not problem instances, and no setting names them.
-
-Every window sits in **December to February**. A probe cannot move a room whose pump is off, and
-pump activity across the test split runs 66 / 75 / 62 % of steps in those months against 2 % in
-June–August. Spreading windows through the year left a fifth of them unable to measure control
-response at all; in the heating season that falls to 0.4 %, and the plant's response to a probe
-roughly triples, so the same number of windows buys a far quieter estimate.
-
-Each window also names a time of day, dealt round-robin within each controller over eight slots
-three hours apart, so excitation is not confounded with the thermal regime a window starts in.
-120 windows per controller give a standard error near 0.016 on mean gain.
-
-All four context lengths are kept because each is informative on at least one metric: 1 d and 2 d
-are redundant for gain (paired t = 0.6) but well separated on accuracy (t = −5.9), while 5 d and
-21 d are the reverse (gain t = 4.1, accuracy t = −2.8). They are also nearly free — the plant is
-driven once per window at the longest context, and the shorter rungs are a slice of that history
-rather than another set of rollouts.
+The two loops scale different things because they cost differently. An open-loop case is a few
+plant rollouts, paid once when the set is compiled, so sampling more of them is nearly free and
+is the only way to get error bars on small differences between methods. A closed-loop step runs
+the controller, which for a planning controller is ~2 s — a year across 30 buildings is over 500
+hours. Episodes are independent, so the closed-loop set is meant to be distributed. Its ten
+starts are spread through the year, since a controller that handles January is not thereby known
+to handle a shoulder season.
 
 ## Scenario identifiers
 

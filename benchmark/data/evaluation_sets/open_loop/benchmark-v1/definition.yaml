@@ -1,5 +1,9 @@
 # The agreed open-loop set: 30 buildings x 4 windows x 2 controllers.
 #
+# Compiled into `cases.parquet` beside this file; see ../../README.md for what the settings mean
+# and why these windows. Editing this file does not change any number until the set is rebuilt --
+# and a changed set belongs under a new name, since a compiled set is immutable for a release.
+#
 # Two controllers, not seven. Measured zero-shot, control response spans almost its whole range
 # between them -- gain 0.15 -> 0.44 under `mpc-nominal` against 0.89 -> 0.99 under
 # `open-loop-aprbs` across the context ladder -- because an MPC's action is a function of the
@@ -16,6 +20,12 @@
 #
 # 120 windows per controller gives a standard error near 0.016 on mean gain,
 # from a within-controller spread of about 0.15.
+#
+# `probes` is the five-plan design: the recorded plan, a signed pair of constant offsets at
+# `probe_amplitude`, and a signed pair of APRBS waveforms holding each level `probe_hold_steps`.
+# The offsets measure the steady-state response and the APRBS the timing, which is what an MPC
+# needs from a model. It is written out here rather than left implicit because it is part of what
+# a number means.
 
 common:
   split: test
@@ -25,6 +35,7 @@ common:
   context_days: [1, 2, 5, 21]
   probes: 5
   probe_amplitude: 6.0
+  probe_hold_steps: 8
   forecast_correction: 0.0
 
 scenarios:
