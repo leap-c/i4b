@@ -1,0 +1,1145 @@
+# The excitation ladder: how much control response can be identified from a context, as a
+# function of how hard that context was excited.
+#
+# A dose-response curve, not a leaderboard. `benchmark-v1` scores a method; this set asks what
+# the method could have known. It is the ablation behind the two controllers `benchmark-v1`
+# settled on -- gain 0.15 under `mpc-nominal` against 0.89 under `open-loop-aprbs` measured
+# zero-shot -- run across all nine rungs instead of the two endpoints.
+#
+# 30 buildings x 1 anchor x 9 rungs = 270 cases, and 4 contexts, so 1080 result rows.
+#
+# The design is **paired**: every rung sees the same building at the same timestamp, under the
+# same weather and the same forecast, so the comparison is within-window rather than across the
+# corpus. An unpaired sweep would confound excitation with which building and which week it
+# landed on, and the between-building spread in gain is larger than the effect being measured.
+# Group on `(scenario_id, start)` to recover a rung's siblings.
+#
+# What a rung cannot share is its own past: a different recorded controller ran a different year,
+# so it reaches the anchor in a different state and with a different plan to probe around. The
+# probes and the plant's response to them therefore differ between rungs, and a number here is
+# not purely a function of the excitation. That is inherent -- the history is what is being
+# varied, and where it ended up is part of it -- and it is the same residual confound
+# `benchmark-v1` carries between its two controllers.
+#
+# The rungs, least to most excited:
+#
+#   mpc-nominal          none            an MPC holding its comfort band
+#   mpc-aprbs-low        low             MPC with a small APRBS residual on its action
+#   mpc-aprbs-medium     medium
+#   mpc-aprbs-high       high
+#   open-loop-aprbs      1.5 K           no feedback at all: APRBS about the heating curve
+#   open-loop-aprbs-3K   3 K             the amplitude ladder, appended as training data
+#   open-loop-aprbs-6K   6 K
+#   open-loop-aprbs-12K  12 K
+#   open-loop-aprbs-24K  24 K            far beyond anything a controller would do
+#
+# The two `mpc-offset-*` controllers are omitted: they shift the comfort bound rather than the
+# excitation, so they are a third "none" rung and would cost a ninth of the runtime to say so.
+#
+# An MPC's action is a function of the state it reacts to, so its effect on the room is
+# confounded with the state -- which is why the bottom of this ladder is expected to be flat and
+# the open-loop rungs are not. Note that the ladder is *not* ordered by how much the supply
+# temperature moved: on the first window here, `mpc-nominal` has a slightly larger context
+# control standard deviation than `open-loop-aprbs` (8.70 K against 8.63 K) and about a sixth of
+# its measured gain. Excitation here means uncorrelated excitation, not amplitude.
+#
+# The top of the ladder is deliberately unrealistic: 24 K of APRBS is a system-identification
+# experiment, not a heating strategy, and it bounds what any amount of excitation could buy.
+#
+# Anchors are each building's first `benchmark-v1` window, so both sets sit in the same weeks of
+# December and share the same eight time-of-day slots. Everything else -- view, horizon, context
+# ladder, probes -- is identical to `benchmark-v1`, so a number here is comparable with one
+# there.
+
+common:
+  split: test
+  view: realistic
+  use_forecast: true
+  horizon_hours: 24
+  context_days: [1, 2, 5, 21]
+  probes: 5
+  probe_amplitude: 6.0
+  probe_hold_steps: 8
+  forecast_correction: 0.0
+
+scenarios:
+  window001:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: mpc-nominal
+  window002:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: mpc-aprbs-low
+  window003:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: mpc-aprbs-medium
+  window004:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: mpc-aprbs-high
+  window005:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: open-loop-aprbs
+  window006:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: open-loop-aprbs-3K
+  window007:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: open-loop-aprbs-6K
+  window008:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: open-loop-aprbs-12K
+  window009:
+    building: BG.N.SFH.02.Gen.ReEx.001.001--period_b
+    start: 2025-12-01 00:00:00
+    controller: open-loop-aprbs-24K
+  window010:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: mpc-nominal
+  window011:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: mpc-aprbs-low
+  window012:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: mpc-aprbs-medium
+  window013:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: mpc-aprbs-high
+  window014:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: open-loop-aprbs
+  window015:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: open-loop-aprbs-3K
+  window016:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: open-loop-aprbs-6K
+  window017:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: open-loop-aprbs-12K
+  window018:
+    building: BG.N.SFH.02.Gen.ReEx.001.002--period_b
+    start: 2025-12-08 12:00:00
+    controller: open-loop-aprbs-24K
+  window019:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: mpc-nominal
+  window020:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: mpc-aprbs-low
+  window021:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: mpc-aprbs-medium
+  window022:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: mpc-aprbs-high
+  window023:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: open-loop-aprbs
+  window024:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: open-loop-aprbs-3K
+  window025:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: open-loop-aprbs-6K
+  window026:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: open-loop-aprbs-12K
+  window027:
+    building: BG.N.SFH.02.Gen.ReEx.001.003--period_b
+    start: 2025-12-15 00:00:00
+    controller: open-loop-aprbs-24K
+  window028:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: mpc-nominal
+  window029:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: mpc-aprbs-low
+  window030:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: mpc-aprbs-medium
+  window031:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: mpc-aprbs-high
+  window032:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: open-loop-aprbs
+  window033:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: open-loop-aprbs-3K
+  window034:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: open-loop-aprbs-6K
+  window035:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: open-loop-aprbs-12K
+  window036:
+    building: CY.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-22 12:00:00
+    controller: open-loop-aprbs-24K
+  window037:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: mpc-nominal
+  window038:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: mpc-aprbs-low
+  window039:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: mpc-aprbs-medium
+  window040:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: mpc-aprbs-high
+  window041:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: open-loop-aprbs
+  window042:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: open-loop-aprbs-3K
+  window043:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: open-loop-aprbs-6K
+  window044:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: open-loop-aprbs-12K
+  window045:
+    building: CY.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-29 00:00:00
+    controller: open-loop-aprbs-24K
+  window046:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: mpc-nominal
+  window047:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: mpc-aprbs-low
+  window048:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: mpc-aprbs-medium
+  window049:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: mpc-aprbs-high
+  window050:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: open-loop-aprbs
+  window051:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: open-loop-aprbs-3K
+  window052:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: open-loop-aprbs-6K
+  window053:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: open-loop-aprbs-12K
+  window054:
+    building: CY.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2026-01-05 12:00:00
+    controller: open-loop-aprbs-24K
+  window055:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: mpc-nominal
+  window056:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: mpc-aprbs-low
+  window057:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: mpc-aprbs-medium
+  window058:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: mpc-aprbs-high
+  window059:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: open-loop-aprbs
+  window060:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: open-loop-aprbs-3K
+  window061:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: open-loop-aprbs-6K
+  window062:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: open-loop-aprbs-12K
+  window063:
+    building: DE.N.SFH.05.Gen.ReEx.001.001--period_b
+    start: 2026-01-12 00:00:00
+    controller: open-loop-aprbs-24K
+  window064:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: mpc-nominal
+  window065:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: mpc-aprbs-low
+  window066:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: mpc-aprbs-medium
+  window067:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: mpc-aprbs-high
+  window068:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: open-loop-aprbs
+  window069:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: open-loop-aprbs-3K
+  window070:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: open-loop-aprbs-6K
+  window071:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: open-loop-aprbs-12K
+  window072:
+    building: DE.N.SFH.05.Gen.ReEx.001.002--period_b
+    start: 2026-01-19 12:00:00
+    controller: open-loop-aprbs-24K
+  window073:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: mpc-nominal
+  window074:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: mpc-aprbs-low
+  window075:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: mpc-aprbs-medium
+  window076:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: mpc-aprbs-high
+  window077:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: open-loop-aprbs
+  window078:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: open-loop-aprbs-3K
+  window079:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: open-loop-aprbs-6K
+  window080:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: open-loop-aprbs-12K
+  window081:
+    building: DE.N.SFH.05.Gen.ReEx.001.003--period_b
+    start: 2026-01-26 00:00:00
+    controller: open-loop-aprbs-24K
+  window082:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: mpc-nominal
+  window083:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: mpc-aprbs-low
+  window084:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: mpc-aprbs-medium
+  window085:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: mpc-aprbs-high
+  window086:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: open-loop-aprbs
+  window087:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: open-loop-aprbs-3K
+  window088:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: open-loop-aprbs-6K
+  window089:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: open-loop-aprbs-12K
+  window090:
+    building: DE.N.SFH.07.Gen.ReEx.001.001--period_b
+    start: 2026-02-02 12:00:00
+    controller: open-loop-aprbs-24K
+  window091:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: mpc-nominal
+  window092:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: mpc-aprbs-low
+  window093:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: mpc-aprbs-medium
+  window094:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: mpc-aprbs-high
+  window095:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: open-loop-aprbs
+  window096:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: open-loop-aprbs-3K
+  window097:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: open-loop-aprbs-6K
+  window098:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: open-loop-aprbs-12K
+  window099:
+    building: DE.N.SFH.07.Gen.ReEx.001.002--period_b
+    start: 2026-02-09 00:00:00
+    controller: open-loop-aprbs-24K
+  window100:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: mpc-nominal
+  window101:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: mpc-aprbs-low
+  window102:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: mpc-aprbs-medium
+  window103:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: mpc-aprbs-high
+  window104:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: open-loop-aprbs
+  window105:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: open-loop-aprbs-3K
+  window106:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: open-loop-aprbs-6K
+  window107:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: open-loop-aprbs-12K
+  window108:
+    building: DE.N.SFH.07.Gen.ReEx.001.003--period_b
+    start: 2026-02-16 12:00:00
+    controller: open-loop-aprbs-24K
+  window109:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: mpc-nominal
+  window110:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: mpc-aprbs-low
+  window111:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: mpc-aprbs-medium
+  window112:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: mpc-aprbs-high
+  window113:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: open-loop-aprbs
+  window114:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: open-loop-aprbs-3K
+  window115:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: open-loop-aprbs-6K
+  window116:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: open-loop-aprbs-12K
+  window117:
+    building: FR.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2026-02-23 00:00:00
+    controller: open-loop-aprbs-24K
+  window118:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: mpc-nominal
+  window119:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: mpc-aprbs-low
+  window120:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: mpc-aprbs-medium
+  window121:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: mpc-aprbs-high
+  window122:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: open-loop-aprbs
+  window123:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: open-loop-aprbs-3K
+  window124:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: open-loop-aprbs-6K
+  window125:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: open-loop-aprbs-12K
+  window126:
+    building: FR.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-03 12:00:00
+    controller: open-loop-aprbs-24K
+  window127:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: mpc-nominal
+  window128:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: mpc-aprbs-low
+  window129:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: mpc-aprbs-medium
+  window130:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: mpc-aprbs-high
+  window131:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: open-loop-aprbs
+  window132:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: open-loop-aprbs-3K
+  window133:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: open-loop-aprbs-6K
+  window134:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: open-loop-aprbs-12K
+  window135:
+    building: FR.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-10 00:00:00
+    controller: open-loop-aprbs-24K
+  window136:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: mpc-nominal
+  window137:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: mpc-aprbs-low
+  window138:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: mpc-aprbs-medium
+  window139:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: mpc-aprbs-high
+  window140:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: open-loop-aprbs
+  window141:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: open-loop-aprbs-3K
+  window142:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: open-loop-aprbs-6K
+  window143:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: open-loop-aprbs-12K
+  window144:
+    building: FR.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2025-12-17 12:00:00
+    controller: open-loop-aprbs-24K
+  window145:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: mpc-nominal
+  window146:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: mpc-aprbs-low
+  window147:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: mpc-aprbs-medium
+  window148:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: mpc-aprbs-high
+  window149:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: open-loop-aprbs
+  window150:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: open-loop-aprbs-3K
+  window151:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: open-loop-aprbs-6K
+  window152:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: open-loop-aprbs-12K
+  window153:
+    building: FR.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2025-12-24 00:00:00
+    controller: open-loop-aprbs-24K
+  window154:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: mpc-nominal
+  window155:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: mpc-aprbs-low
+  window156:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: mpc-aprbs-medium
+  window157:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: mpc-aprbs-high
+  window158:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: open-loop-aprbs
+  window159:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: open-loop-aprbs-3K
+  window160:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: open-loop-aprbs-6K
+  window161:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: open-loop-aprbs-12K
+  window162:
+    building: FR.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-31 12:00:00
+    controller: open-loop-aprbs-24K
+  window163:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: mpc-nominal
+  window164:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: mpc-aprbs-low
+  window165:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: mpc-aprbs-medium
+  window166:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: mpc-aprbs-high
+  window167:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: open-loop-aprbs
+  window168:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: open-loop-aprbs-3K
+  window169:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: open-loop-aprbs-6K
+  window170:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: open-loop-aprbs-12K
+  window171:
+    building: IE.N.SFH.08.Gen.ReEx.001.001--period_b
+    start: 2026-01-07 00:00:00
+    controller: open-loop-aprbs-24K
+  window172:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: mpc-nominal
+  window173:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: mpc-aprbs-low
+  window174:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: mpc-aprbs-medium
+  window175:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: mpc-aprbs-high
+  window176:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: open-loop-aprbs
+  window177:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: open-loop-aprbs-3K
+  window178:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: open-loop-aprbs-6K
+  window179:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: open-loop-aprbs-12K
+  window180:
+    building: IE.N.SFH.08.Gen.ReEx.001.002--period_b
+    start: 2026-01-14 12:00:00
+    controller: open-loop-aprbs-24K
+  window181:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: mpc-nominal
+  window182:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: mpc-aprbs-low
+  window183:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: mpc-aprbs-medium
+  window184:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: mpc-aprbs-high
+  window185:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: open-loop-aprbs
+  window186:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: open-loop-aprbs-3K
+  window187:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: open-loop-aprbs-6K
+  window188:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: open-loop-aprbs-12K
+  window189:
+    building: IE.N.SFH.08.Gen.ReEx.001.003--period_b
+    start: 2026-01-21 00:00:00
+    controller: open-loop-aprbs-24K
+  window190:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: mpc-nominal
+  window191:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: mpc-aprbs-low
+  window192:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: mpc-aprbs-medium
+  window193:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: mpc-aprbs-high
+  window194:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: open-loop-aprbs
+  window195:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: open-loop-aprbs-3K
+  window196:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: open-loop-aprbs-6K
+  window197:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: open-loop-aprbs-12K
+  window198:
+    building: IE.N.SFH.09.Tframe.ReEx.001.001--period_b
+    start: 2026-01-28 12:00:00
+    controller: open-loop-aprbs-24K
+  window199:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: mpc-nominal
+  window200:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: mpc-aprbs-low
+  window201:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: mpc-aprbs-medium
+  window202:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: mpc-aprbs-high
+  window203:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: open-loop-aprbs
+  window204:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: open-loop-aprbs-3K
+  window205:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: open-loop-aprbs-6K
+  window206:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: open-loop-aprbs-12K
+  window207:
+    building: IE.N.SFH.09.Tframe.ReEx.001.002--period_b
+    start: 2026-02-04 00:00:00
+    controller: open-loop-aprbs-24K
+  window208:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: mpc-nominal
+  window209:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: mpc-aprbs-low
+  window210:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: mpc-aprbs-medium
+  window211:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: mpc-aprbs-high
+  window212:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: open-loop-aprbs
+  window213:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: open-loop-aprbs-3K
+  window214:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: open-loop-aprbs-6K
+  window215:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: open-loop-aprbs-12K
+  window216:
+    building: IE.N.SFH.09.Tframe.ReEx.001.003--period_b
+    start: 2026-02-11 12:00:00
+    controller: open-loop-aprbs-24K
+  window217:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: mpc-nominal
+  window218:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: mpc-aprbs-low
+  window219:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: mpc-aprbs-medium
+  window220:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: mpc-aprbs-high
+  window221:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: open-loop-aprbs
+  window222:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: open-loop-aprbs-3K
+  window223:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: open-loop-aprbs-6K
+  window224:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: open-loop-aprbs-12K
+  window225:
+    building: NO.N.SFH.04.Gen.ReEx.001.001--period_b
+    start: 2026-02-18 00:00:00
+    controller: open-loop-aprbs-24K
+  window226:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: mpc-nominal
+  window227:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: mpc-aprbs-low
+  window228:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: mpc-aprbs-medium
+  window229:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: mpc-aprbs-high
+  window230:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: open-loop-aprbs
+  window231:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: open-loop-aprbs-3K
+  window232:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: open-loop-aprbs-6K
+  window233:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: open-loop-aprbs-12K
+  window234:
+    building: NO.N.SFH.04.Gen.ReEx.001.002--period_b
+    start: 2026-02-25 12:00:00
+    controller: open-loop-aprbs-24K
+  window235:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: mpc-nominal
+  window236:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: mpc-aprbs-low
+  window237:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: mpc-aprbs-medium
+  window238:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: mpc-aprbs-high
+  window239:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: open-loop-aprbs
+  window240:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: open-loop-aprbs-3K
+  window241:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: open-loop-aprbs-6K
+  window242:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: open-loop-aprbs-12K
+  window243:
+    building: NO.N.SFH.04.Gen.ReEx.001.003--period_b
+    start: 2025-12-05 00:00:00
+    controller: open-loop-aprbs-24K
+  window244:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: mpc-nominal
+  window245:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: mpc-aprbs-low
+  window246:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: mpc-aprbs-medium
+  window247:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: mpc-aprbs-high
+  window248:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: open-loop-aprbs
+  window249:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: open-loop-aprbs-3K
+  window250:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: open-loop-aprbs-6K
+  window251:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: open-loop-aprbs-12K
+  window252:
+    building: PL.N.SFH.03.Gen.ReEx.001.001--period_b
+    start: 2025-12-12 12:00:00
+    controller: open-loop-aprbs-24K
+  window253:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: mpc-nominal
+  window254:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: mpc-aprbs-low
+  window255:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: mpc-aprbs-medium
+  window256:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: mpc-aprbs-high
+  window257:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: open-loop-aprbs
+  window258:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: open-loop-aprbs-3K
+  window259:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: open-loop-aprbs-6K
+  window260:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: open-loop-aprbs-12K
+  window261:
+    building: PL.N.SFH.03.Gen.ReEx.001.002--period_b
+    start: 2025-12-19 00:00:00
+    controller: open-loop-aprbs-24K
+  window262:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: mpc-nominal
+  window263:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: mpc-aprbs-low
+  window264:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: mpc-aprbs-medium
+  window265:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: mpc-aprbs-high
+  window266:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: open-loop-aprbs
+  window267:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: open-loop-aprbs-3K
+  window268:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: open-loop-aprbs-6K
+  window269:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: open-loop-aprbs-12K
+  window270:
+    building: PL.N.SFH.03.Gen.ReEx.001.003--period_b
+    start: 2025-12-26 12:00:00
+    controller: open-loop-aprbs-24K
