@@ -7,6 +7,7 @@ from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
+import numpy as np
 import pandas as pd
 import pyarrow.compute as pc
 import pyarrow.dataset as ds
@@ -56,12 +57,21 @@ EXCITATION_DTYPE = pd.CategoricalDtype(
 
 _DEFAULT_DIR = Path(__file__).resolve().parents[2] / "data" / "corpus"
 
-_RAW_COLUMN_RENAMES = {
+#: The irradiance columns carry their provider's names in the corpus and the channel names
+#: everywhere downstream. Ambient temperature is deliberately absent: `exogenous.parquet` holds
+#: both the raw weather (`temperature_2m_C`) and the temperature the simulator integrated
+#: against (`T_amb`), and renaming the first onto the second made two columns of the same name
+#: that were then resolved by position. The simulator's is authoritative; the raw weather keeps
+#: its own name.
+_IRRADIANCE_RENAMES = {
     "ghi_W_m2": "ghi",
     "dni_W_m2": "dni",
     "dhi_W_m2": "dhi",
-    "temperature_2m_C": "T_amb",
 }
+#: `forecasts.parquet` holds raw weather only, so there is nothing for the ambient rename to
+#: collide with there -- an archived run's `temperature_2m_C` *is* its `T_amb`.
+_FORECAST_RENAMES = {**_IRRADIANCE_RENAMES, "temperature_2m_C": "T_amb"}
+
 # All disturbance columns available after renaming (exogenous has both
 # pre-computed gains and raw irradiance; forecasts only have raw weather).
 _ALL_DISTURBANCE_COLS = ("T_amb", "Qdot_gains", "ghi", "dni", "dhi")
@@ -89,10 +99,11 @@ def load_dataset(dataset_dir: str | Path | None = None) -> BenchmarkDataset:
         Path to the dataset root. Defaults to ``<repo>/production``.
     """
     d = Path(dataset_dir or _DEFAULT_DIR)
-    exogenous = pd.read_parquet(d / "exogenous.parquet").rename(columns=_RAW_COLUMN_RENAMES)
-    # Exogenous already has T_amb; drop the duplicate created by the rename.
-    exogenous = exogenous.loc[:, ~exogenous.columns.duplicated()]
-    forecasts = pd.read_parquet(d / "forecasts.parquet").rename(columns=_RAW_COLUMN_RENAMES)
+    exogenous = pd.read_parquet(d / "exogenous.parquet").rename(columns=_IRRADIANCE_RENAMES)
+    if exogenous.columns.duplicated().any():
+        duplicated = sorted(exogenous.columns[exogenous.columns.duplicated()])
+        raise ValueError(f"exogenous.parquet has duplicate columns: {duplicated}")
+    forecasts = pd.read_parquet(d / "forecasts.parquet").rename(columns=_FORECAST_RENAMES)
     return BenchmarkDataset(
         buildings=pd.read_parquet(d / "buildings.parquet"),
         scenarios=pd.read_parquet(d / "scenarios.parquet"),
@@ -155,11 +166,21 @@ def load_controller_data(
     Reads `transitions/`, the one store of trajectory states, so every recorded controller is
     reachable the same way.
 
+    The exogenous join is checked rather than trusted: a duplicated key on either side, a
+    trajectory step with no weather behind it, a gap or a step off the 15-minute grid, or a
+    non-finite value in a channel the plant integrates would each turn into a silently wrong
+    context. `validate="many_to_one"` catches the first, and `_check_grid` the rest.
+
     Returns
     -------
     pandas.DataFrame
         The controller's states and actions, timestamp-sorted, joined with the scenario's
         exogenous channels.
+
+    Raises
+    ------
+    ValueError
+        If the join or the resulting grid fails any of those checks.
     """
     row = dataset.scenarios[dataset.scenarios["scenario_id"] == scenario_id]
     if row.empty:
@@ -181,8 +202,27 @@ def load_controller_data(
         ["timestamp_utc"] + list(_ALL_DISTURBANCE_COLS)
     ].copy()
     exo["timestamp_utc"] = pd.to_datetime(exo["timestamp_utc"], utc=True)
+    if exo["timestamp_utc"].duplicated().any():
+        raise ValueError(f"exogenous rows for {scenario_id!r} repeat a timestamp")
+    if frame["timestamp_utc"].duplicated().any():
+        raise ValueError(f"trajectory {scenario_id}--{controller_id} repeats a timestamp")
 
-    frame = frame.merge(exo, on="timestamp_utc", how="left")
+    before = len(frame)
+    frame = frame.merge(
+        exo, on="timestamp_utc", how="left", validate="many_to_one", indicator=True
+    )
+    if len(frame) != before:
+        raise ValueError(
+            f"the exogenous join changed the row count of {scenario_id}--{controller_id}: "
+            f"{before} -> {len(frame)}"
+        )
+    unmatched = int((frame["_merge"] != "both").sum())
+    if unmatched:
+        raise ValueError(
+            f"{unmatched} step(s) of {scenario_id}--{controller_id} have no exogenous row"
+        )
+    frame = frame.drop(columns="_merge")
+    _check_grid(frame, f"{scenario_id}--{controller_id}")
     # One column order for both paths, derived from the channel constants rather than from
     # whichever file the rows came out of.
     order = [
@@ -194,6 +234,30 @@ def load_controller_data(
         *_ALL_DISTURBANCE_COLS,
     ]
     return frame[order].sort_values("timestamp_utc", ignore_index=True)
+
+
+#: The channels a context is built from, and so the ones a non-finite value must not reach.
+_REQUIRED_CHANNELS = (*PLANT_STATE_CHANNELS, *CONTROL_CHANNELS, *_ALL_DISTURBANCE_COLS)
+
+
+def _check_grid(frame: pd.DataFrame, name: str) -> None:
+    """A trajectory must be one contiguous, finite series on the corpus' 15-minute grid.
+
+    Every downstream slice indexes by step count -- a context is `history[-n:]`, an anchor is a
+    step offset from the scenario's start -- so a missing or repeated quarter hour silently
+    shifts a window rather than raising anywhere.
+    """
+    stamps = frame["timestamp_utc"]
+    if not stamps.is_monotonic_increasing:
+        raise ValueError(f"{name}: timestamps are not increasing")
+    spacing = stamps.diff().dropna().unique()
+    if len(spacing) > 1 or (len(spacing) == 1 and spacing[0] != STEP.to_timedelta64()):
+        raise ValueError(f"{name}: timestamps are not on the {STEP} grid ({spacing[:3]})")
+    present = [c for c in _REQUIRED_CHANNELS if c in frame]
+    bad = frame[present].isna() | ~np.isfinite(frame[present].to_numpy(dtype=float))
+    if bad.to_numpy().any():
+        columns = sorted(bad.columns[bad.any()])
+        raise ValueError(f"{name}: non-finite values in {columns}")
 
 
 def utc(value) -> pd.Timestamp:
