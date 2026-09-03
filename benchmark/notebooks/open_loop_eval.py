@@ -10,12 +10,13 @@ def _():
     import numpy as np
     import pandas as pd
     import plotly.graph_objects as go
-    from i4b_bench import inspect_window, load_dataset, open_loop_setting
+    from i4b_bench import inspect_case, load_definition, resolve_evaluation_set
 
     # Categorical slots 1 and 2, in fixed order: the plant is always blue, the model always
-    # orange. Signed probe offsets get the diverging blue<->red pair, gray at the nominal.
+    # orange. The nominal plan is gray; each signed probe pair gets a blue<->red shade.
     PLANT, MODEL = "#2a78d6", "#eb6834"
-    PROBES = ["#184f95", "#6da7ec", "#7a7a76", "#ef8b8a", "#e34948"]
+    # nominal first, then the signed offset pair and the signed APRBS pair
+    PROBES = ["#7a7a76", "#184f95", "#e34948", "#6da7ec", "#ef8b8a"]
     GRID, INK = "#e4e3df", "#52514e"
 
     def style(fig, title, xaxis, yaxis, height=380):
@@ -30,8 +31,8 @@ def _():
         return fig
 
     return (
-        GRID, INK, MODEL, PLANT, PROBES, go, inspect_window, load_dataset,
-        mo, np, open_loop_setting, pd, style,
+        GRID, INK, MODEL, PLANT, PROBES, go, inspect_case, load_definition,
+        mo, np, pd, resolve_evaluation_set, style,
     )
 
 
@@ -40,37 +41,39 @@ def _(mo):
     mo.md("""
     # Open-loop evaluation, window by window
 
-    `eval_benchmark_open_loop` reduces each window to four numbers. This notebook shows what
+    `eval_benchmark_open_loop` reduces each case to four numbers. This notebook shows what
     produced them: the history a model was given, the probes it was asked about, and how its
     answer compares to what the plant did.
 
-    Use it to check that a number is measuring what it claims to.
+    Everything below is read from the compiled evaluation set -- the same rows that were scored,
+    not a re-run of the plant. Use it to check that a number is measuring what it claims to.
     """)
     return
 
 
 @app.cell
-def _(load_dataset, mo, open_loop_setting):
-    dataset = load_dataset()
-    setting = open_loop_setting("benchmark")
-    windows = dict(sorted(setting.scenarios.items()))
+def _(load_definition, mo, resolve_evaluation_set):
+    EVALUATION_SET = "benchmark-v1"
+    definition = load_definition(resolve_evaluation_set(EVALUATION_SET))
+    windows = dict(sorted(definition.scenarios.items()))
     picker = mo.ui.dropdown(
         options={f"{n} - {w.controller} - {w.start}": n for n, w in windows.items()},
         value=next(f"{n} - {w.controller} - {w.start}" for n, w in windows.items()),
-        label="window",
+        label="case",
     )
     context_pick = mo.ui.dropdown(
-        options={f"{d:g} d": d for d in setting.context_days},
-        value=f"{max(setting.context_days):g} d",
+        options={f"{d:g} d": d for d in definition.context_days},
+        value=f"{max(definition.context_days):g} d",
         label="context",
     )
     mo.hstack([picker, context_pick], justify="start", gap=2)
-    return context_pick, dataset, picker, setting, windows
+    return EVALUATION_SET, context_pick, definition, picker, windows
 
 
 @app.cell
-def _(context_pick, dataset, inspect_window, np, picker, setting, windows):
-    window = windows[picker.value]
+def _(EVALUATION_SET, context_pick, definition, inspect_case, np, picker, windows):
+    case_id = picker.value
+    window = windows[case_id]
 
     def persistence(observations, controls):
         """Stand-in so the notebook runs anywhere. Swap in a real model below."""
@@ -83,13 +86,18 @@ def _(context_pick, dataset, inspect_window, np, picker, setting, windows):
         from heat_control.adapter import as_predictor
         from heat_control.models import load as load_model
 
-        predictor = as_predictor(load_model("chronos_2", ["T_room", "T_hp_ret"]), view=setting.view)
+        predictor = as_predictor(
+            load_model("chronos_2", ["T_room", "T_hp_ret"]), view=definition.view
+        )
         model_name = "chronos_2 (zero-shot)"
     except Exception:
         predictor, model_name = persistence, "persistence (no model available)"
 
-    detail = inspect_window(
-        window, predictor, dataset=dataset, setting=setting, context_days=context_pick.value
+    detail = inspect_case(
+        case_id,
+        predictor,
+        evaluation_set=EVALUATION_SET,
+        context_days=context_pick.value,
     )
     return detail, model_name, window
 
@@ -149,11 +157,16 @@ def _(mo):
     mo.md("""
     ## Which controls were tested
 
-    Five counterfactual plans around the one the corpus applied, evenly spaced over
-    ±`probe_amplitude`. The plant clips them: `check_hp` collapses the supply temperature
-    whenever the pump idles, so the dashed lines are what was asked for and the solid lines are
-    what actually happened. **The model is asked about the solid ones** -- comparing its answer
-    to a response the plant never produced would inflate the gain.
+    Five counterfactual plans around the one the corpus applied: the nominal plan, a signed pair
+    of constant offsets at ±`probe_amplitude`, and a signed pair of APRBS waveforms. The offsets
+    ask about the steady-state response, the APRBS about timing.
+
+    The plant clips them -- `check_hp` collapses the supply temperature whenever the pump idles
+    -- so the dashed lines are what was requested and the solid lines are what the actuator
+    applied. **The model is asked about the dashed ones.** The applied sequence depends on the
+    true future return temperature, so handing it over would leak the plant's own response into
+    the question; it is kept as diagnostics, and `realized_share` reports how much of the
+    requested spread survived.
     """)
     return
 
@@ -162,12 +175,12 @@ def _(mo):
 def _(PROBES, detail, go, style):
     _t = detail["timestamps"]
     _fig = go.Figure()
-    for _i in range(detail["applied"].shape[0]):
-        _c = PROBES[_i * (len(PROBES) - 1) // max(detail["applied"].shape[0] - 1, 1)]
+    for _i, _role in enumerate(detail["roles"]):
+        _c = PROBES[_i % len(PROBES)]
         _fig.add_scatter(x=_t, y=detail["requested"][_i], mode="lines", showlegend=False,
                          line=dict(width=1.2, color=_c, dash="dot"), opacity=0.55)
         _fig.add_scatter(x=_t, y=detail["applied"][_i], mode="lines",
-                         line=dict(width=2, color=_c), name=f"probe {_i + 1}")
+                         line=dict(width=2, color=_c), name=_role)
     style(_fig, "Probe plans: requested (dotted) against applied (solid)", "", "T_hp_sup [C]")
     _fig
     return

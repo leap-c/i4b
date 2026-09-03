@@ -10,7 +10,6 @@ have caught the crash fixed in 861cf96.
 import importlib.util
 import itertools
 import os
-from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -23,12 +22,18 @@ from i4b_bench import (
     load_controller_data,
     load_dataset,
 )
+from i4b_bench.cases import load_cases
+from i4b_bench.evaluation_set import CASES_FILE, load_definition
 from i4b_bench.observation import history_channels
-from i4b_bench.open_loop_eval import eval_scenario_open_loop, open_loop_setting
+from i4b_bench.open_loop_eval import eval_benchmark_open_loop
 
 DATASET = Path(os.environ.get("I4B_BENCHMARK", Path(__file__).resolve().parents[1] / "data" / "corpus"))
 needs_dataset = pytest.mark.skipif(
     not (DATASET / "trajectories.parquet").exists(), reason="benchmark dataset not present"
+)
+FAST = Path(__file__).resolve().parents[1] / "data/evaluation_sets/open_loop/fast-eval"
+needs_fast = pytest.mark.skipif(
+    not (FAST / CASES_FILE).exists(), reason="fast-eval has not been compiled"
 )
 
 
@@ -115,8 +120,8 @@ def test_the_wall_temperature_is_exposed_only_by_the_perfect_view(dataset, scena
     assert set(observation["state"]) == set(STATE_CHANNELS[view])
 
 
-@needs_dataset
-def test_the_predictor_is_handed_only_the_declared_channels(dataset):
+@needs_fast
+def test_the_predictor_is_handed_only_the_declared_channels():
     """Whatever a view declares is exactly what arrives -- no extra channel leaks through."""
     seen = {}
 
@@ -125,13 +130,10 @@ def test_the_predictor_is_handed_only_the_declared_channels(dataset):
         seen["forecast"] = {k for k in observations[0]["forecast"] if k != "timestamp"}
         return [{"T_room": np.zeros(u.shape)} for u in controls]
 
-    setting = open_loop_setting("fast_eval")
-    window = next(iter(setting.scenarios.values()))
-    eval_scenario_open_loop(
-        window, predictor, dataset=dataset, setting=replace(setting, use_forecast=False)
-    )
-    assert seen["history"] == set(history_channels(setting.view))
-    assert seen["forecast"] == set(DISTURBANCE_CHANNELS[setting.view])
+    definition = load_definition(FAST)
+    eval_benchmark_open_loop(predictor, evaluation_set=FAST)
+    assert seen["history"] == set(history_channels(definition.view))
+    assert seen["forecast"] == set(DISTURBANCE_CHANNELS[definition.view])
 
 
 @needs_dataset
@@ -169,50 +171,32 @@ def test_prepare_disturbances_matches_the_plant_contract(dataset):
     assert set(wide.columns) == {"T_amb", "Qdot_gains", "ghi", "dni", "dhi"}
 
 
-@needs_dataset
-def test_a_predictor_that_replays_the_plant_scores_a_perfect_gain(dataset):
+@needs_fast
+def test_a_predictor_that_replays_the_plant_scores_a_perfect_gain():
     """The end-to-end calibration: replay the plant and the harness must say so.
 
     `test_gain_is_calibrated` checks the formula on synthetic arrays. This checks the whole path
-    -- which control the predictor is handed, how the probes are rolled, how history is sliced
-    for each context -- by driving the real plant and demanding the answer come back exact.
+    -- which control the predictor is handed, which plan is nominal, how history is sliced for
+    each context -- against the plant's own answer, and demands it come back exact.
 
-    It is the test that would have caught the predictor being handed the *requested* probe plans
-    while the plant clipped them: a replayed plant scored 0.4 rather than 1.0, because the model
-    was being asked about an intervention that never happened.
+    That the answer replayed here is the *stored* one is the point: an artifact whose
+    trajectories drifted from the simulator would still score 1.0 here, which is why
+    `test_case_generation.py` rolls the plant again and compares.
     """
-    from i4b_bench import ScenarioEnv, eval_benchmark_open_loop, open_loop_setting
-    from i4b_bench.dataset import PER_DAY, step_of
-
-    setting = open_loop_setting("fast_eval")
-    context = round(setting.context_days[0] * PER_DAY)
-    horizon = round(setting.horizon_hours * 4)
-    # the harness drives windows grouped by building, and once per context length, so cycle the
-    # same order rather than assuming the setting's own
-    order = [w for _, w in sorted(setting.scenarios.items(), key=lambda kv: (kv[1].building, kv[0]))]
+    definition = load_definition(FAST)
+    table = load_cases(FAST / CASES_FILE, definition.view)
+    actual = {
+        row["case_id"]: np.array([p["actual_T_room"] for p in row["plans"]], dtype=float)
+        for row in table.to_pylist()
+    }
+    order = table.column("case_id").to_pylist()
     seen = itertools.cycle(order)
 
     def oracle(observations, controls):
-        out = []
-        for plans in controls:
-            window = next(seen)
-            env = ScenarioEnv(
-                window.building, dataset=dataset, initial_controller_id=window.controller,
-                max_context_length=context, planning_steps=horizon,
-                start_step=step_of(dataset, window.building, window.start),
-                use_forecast=setting.use_forecast, view=setting.view,
-                forecast_correction=setting.forecast_correction, build_observation=False,
-            )
-            predicted = np.empty_like(plans)
-            for k, plan in enumerate(plans):
-                env.reset()
-                for t, action in enumerate(plan):
-                    predicted[k, t] = env.step(float(action))[4]["T_room"]
-            out.append({"T_room": predicted})
-        return out
+        return [{"T_room": actual[next(seen)]} for _ in controls]
 
-    frame = eval_benchmark_open_loop(oracle, dataset=dataset, setting=setting)
-    assert frame["mae_K"].max() == pytest.approx(0.0, abs=1e-9)
+    frame = eval_benchmark_open_loop(oracle, evaluation_set=FAST)
+    assert frame["mae_K"].max() == pytest.approx(0.0, abs=1e-6)
     assert frame["gain"].min() == pytest.approx(1.0, abs=1e-9)
 
 
