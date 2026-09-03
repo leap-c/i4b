@@ -75,8 +75,8 @@ def eval_benchmark_open_loop(
     Returns
     -------
     pandas.DataFrame
-        One row per case and context length, with `mae_K` and `bias_K` (point accuracy on the
-        plan tagged `nominal`), `response_K` (RMS movement the probes produced in the plant),
+        One row per case and context length, with `mae_K`, `rmse_K` and `bias_K` (point accuracy
+        on the plan tagged `nominal`), `response_K` (RMS movement the probes produced in the plant),
         `gain`, its two sufficient statistics, and the case's provenance. `gain` is the slope of
         the model's predicted deviation on the plant's over the probes: 1.0 moves as the plant
         does, 0.0 ignores the control, `NaN` when `response_K` fell below `MIN_RESPONSE_K`.
@@ -334,6 +334,7 @@ def _score(
                     float(prepared.applied[case].std(axis=0).mean()) / spread if spread else 0.0
                 ),
                 "mae_K": float(np.abs(error).mean()),
+                "rmse_K": float(np.sqrt(np.mean(error**2))),
                 "bias_K": float(error.mean()),
                 "response_K": response,
                 "gain_cross": cross,
