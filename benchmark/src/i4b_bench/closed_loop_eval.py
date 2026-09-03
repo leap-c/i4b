@@ -114,6 +114,10 @@ def eval_benchmark_closed_loop(
     _check_split(dataset, setting)
 
     context = round(setting.context_days * PER_DAY)
+    # One cache for this call, shared by every episode: two episodes on the same building would
+    # otherwise each pay ~40 s to prepare the same archived forecast runs. It dies with the
+    # call, so a memo can never be served against a corpus it was not built from.
+    forecast_cache: dict = {}
     rows = []
     for name, episode in setting.scenarios.items():
         start = step_of(dataset, episode.building, episode.start)
@@ -129,6 +133,7 @@ def eval_benchmark_closed_loop(
             n_evaluation_steps=end - start,
             start_step=start,
             use_forecast=setting.use_forecast,
+            forecast_cache=forecast_cache,
         )
         rows.append(
             {
@@ -158,6 +163,7 @@ def eval_scenario_closed_loop(
     n_evaluation_steps: int | None = None,
     start_step: int | None = None,
     use_forecast: bool = False,
+    forecast_cache: dict | None = None,
 ) -> dict[str, Any]:
     """Run a controller on one benchmark scenario, closed loop.
 
@@ -184,6 +190,8 @@ def eval_scenario_closed_loop(
         Step index to start at. Defaults to the scenario's own start.
     use_forecast : bool
         Use archived forecast runs rather than the realised weather.
+    forecast_cache : dict, optional
+        A caller-owned dict memoising prepared forecast runs across episodes; see `ScenarioEnv`.
 
     Returns
     -------
@@ -203,6 +211,7 @@ def eval_scenario_closed_loop(
         planning_steps=planning_steps,
         start_step=start_step,
         use_forecast=use_forecast,
+        forecast_cache=forecast_cache,
     )
 
     n_steps = n_evaluation_steps if n_evaluation_steps is not None else env.max_steps

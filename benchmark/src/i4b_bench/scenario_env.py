@@ -71,6 +71,11 @@ class ScenarioEnv:
         and then roll without paying for the rest.
     forecast_correction : float
         How far an archived forecast is pulled toward the current sensor reading, in [0, 1].
+    forecast_cache : dict, optional
+        A caller-owned dict in which to memoise prepared forecast runs across environments; see
+        `ForecastProvider`. Preparing one building's archive costs ~40 s, so anything that
+        builds several environments over the same building should pass one and let it die with
+        the run.
     """
 
     def __init__(
@@ -88,6 +93,7 @@ class ScenarioEnv:
         view: ObsView = "perfect",
         build_observation: bool = True,
         forecast_correction: float = 0.5,
+        forecast_cache: dict | None = None,
     ):
         if dataset is None:
             dataset = load_dataset(dataset_dir)
@@ -147,6 +153,7 @@ class ScenarioEnv:
             forecasts=dataset.forecasts,
             location_id=scenario_row.get("location_id"),
             cache_key=(str(scenario_row.get("location_id")), str(building_id)),
+            runs_cache=forecast_cache,
             correction_fraction=forecast_correction,
         )
 
