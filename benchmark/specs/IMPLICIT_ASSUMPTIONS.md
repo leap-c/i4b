@@ -14,13 +14,16 @@ places without a single source of truth:
 |---|---|
 | `i4b/gym_interface/room_env.py` (`delta_t=900` default) | Constructor default; validated against disturbance DataFrame spacing |
 | `src/i4b_bench/scenario_env.py` `ScenarioEnv.__init__` | Never passes `delta_t` to `RoomHeatEnv` — relies on the default |
-| `src/i4b_bench/scenario_env.py` `ForecastProvider.get_forecast` (now `src/i4b_bench/forecast.py`) | Hardcodes `delta_t = 900` independently |
-| `src/i4b_bench/dataset.py` `load_dataset` / `load_controller_data` | Pure I/O, no resolution check |
-| Controller trajectory (history seeding) | Assumed to match but never validated |
+| `src/i4b_bench/forecast.py` `ForecastProvider.get_forecast` | Hardcodes `delta_t = 900` independently |
+| `src/i4b_bench/evaluation_set.py` `TIMESTEP_SECONDS` | A fourth constant, used to turn context days and horizon hours into steps |
+| `src/i4b_bench/dataset.py` `load_controller_data` | **Validated**: `_check_grid` rejects a trajectory that is not contiguous on the 15-minute grid |
+| `src/i4b_bench/cases.py` `validate_cases` | **Validated**: a case's history and forecast must be contiguous at `timestep_seconds` |
 
-`RoomHeatEnv` is the only component that validates spacing (it raises if the
-disturbances DataFrame doesn't match `self.delta_t`). The forecast provider
-and history seeding path have no such guard.
+`RoomHeatEnv` validates spacing (it raises if the disturbances DataFrame
+doesn't match `self.delta_t`), and a trajectory read or a compiled case is now
+checked against the 15-minute grid on the way in. What remains unenforced is
+the *agreement* between those constants: nothing would catch a corpus at a
+different resolution being read by a provider that still assumed 900 s.
 
 **Risk:** low while we only use the current benchmark (which is 15-min
 throughout). Would become a silent-bug source if datasets with different

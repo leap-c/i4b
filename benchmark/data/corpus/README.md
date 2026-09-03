@@ -12,7 +12,6 @@ corpus/
   scenarios.parquet        one row per building x weather period (382)
   trajectories.parquet     one row per recorded run (4,202); the index into transitions/
   transitions/             part-*.parquet, the states themselves (147,233,878 rows)
-  controllers/             per-controller replay tables, one parquet each
   controllers.json         how each controller was configured, with provenance hashes
   exogenous.parquet        the disturbances every trajectory was rolled under
   forecasts.parquet        archived forecast runs, for use_forecast=True

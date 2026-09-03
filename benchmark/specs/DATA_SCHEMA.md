@@ -26,11 +26,8 @@ repository and is what `load_dataset()` finds by default.
 ```
 
 `transitions/` is the one store of trajectory states; `trajectories.parquet` is the index into
-it, and `shard_index` turns a `trajectory_id` into a single-file read. Earlier corpora also kept a
-per-controller copy under `controllers/`, holding the same state columns for seven of the eleven
-controllers. It saved 12% on a read, cost 2.7 GB, and meant a trajectory could exist in one store
-and not the other -- which is exactly what happened, and made the excitation levels unusable as
-evaluation contexts. It is gone; `load_controller_data` reads the shards for every controller.
+it, and `shard_index` turns a `trajectory_id` into a single-file read. `load_controller_data`
+reads the shards for every controller, so every recorded run is reachable the same way.
 
 ## Key Concepts
 
@@ -122,6 +119,12 @@ state_t + applied_input_t + exogenous_t  ->  state_(t+1)
 The next row in the same trajectory contains the resulting state. States are not
 duplicated as `*_next` columns.
 
+The disturbance driving a transition is the one at the **start** of the interval, `exogenous_t`,
+not the one stamped on the state it produces. Everything derived from this data follows that:
+a history row pairs a state with the input that produced it (one row later than the corpus
+stores it), and a forecast horizon published at time `t` carries `d_t ... d_(t+h-1)` against
+timestamps `t+1 ... t+h`. See `EVAL_SPEC.md`.
+
 Each trajectory contains **35,039 rows** (35,040 state samples with the final
 state omitted because it has no following applied input).
 
@@ -212,6 +215,14 @@ same scenario. **Not duplicated per controller.**
 | `T_amb`              | float32   | Ambient temperature as used by the simulator|
 | `Qdot_gains`         | float32   | Total thermal gains (internal + solar) [W]  |
 
+**Two ambient temperatures, and only one of them is authoritative.** `T_amb` is what the
+simulator integrated against; `temperature_2m_C` is the raw weather it was derived from. They
+agree here to float32 rounding, but they are different columns with different meanings and are
+never merged: `load_dataset` renames only the irradiance columns, so `T_amb` keeps its meaning
+and the raw record keeps its own name. Renaming `temperature_2m_C` onto `T_amb` produced two
+columns of the same name that were then resolved by position, which is a coincidence away from
+silently swapping them.
+
 
 ### `forecasts.parquet`
 
@@ -289,10 +300,13 @@ The primary join paths are:
 To reconstruct the full flat transition table for one controller:
 
 ```python
-controller = load_controller_data(dataset, "mpc-nominal", scenario_id)
-exogenous  = pd.read_parquet(f"{DATA_DIR}/exogenous.parquet")
-full = controller.merge(exogenous, on=["scenario_id", "timestamp_utc"])
+full = load_controller_data(dataset, "mpc-nominal", scenario_id)
 ```
+
+That join is done for you, and checked: the exogenous keys must be unique, every trajectory step
+must match exactly one of them, the row count must not change, and the result must be finite and
+contiguous on the 15-minute grid. Joining by hand skips all of that -- a duplicated key silently
+multiplies rows, and a missing one silently produces `NaN` disturbances.
 
 To restrict to a split:
 
@@ -412,3 +426,57 @@ The 191 buildings span 64 families and 7 countries; a building under one weather
 *scenario*, so there are 382 of those. `split.parquet` assigns whole families, and covers one
 period per building — 2,101 of the 4,202 trajectories — so no building is trained on in one
 weather year and tested in the other.
+
+---
+
+## Compiled evaluation sets
+
+The corpus is the authority on physical data. What an *evaluation* covers is a separate,
+generated artifact, one directory per set:
+
+```
+data/evaluation_sets/open_loop/<name>/
+  definition.yaml   the windows and the settings -- hand-written, tracked
+  cases.parquet     one row per window, generated from the corpus and the plant
+  manifest.json     fingerprints of the definition, the corpus manifest, and cases.parquet
+```
+
+`cases.parquet` is regenerable and immutable for a release: `data/scripts/
+build_open_loop_cases.py` writes it, and open-loop evaluation reads nothing else -- no corpus,
+no simulator. `EVAL_SPEC.md` says what is measured on it; the schema is declared in
+`i4b_bench.cases.case_schema` and summarized here.
+
+One row per evaluation window:
+
+| Column | Type | Description |
+|---|---|---|
+| `case_id` | string | The window's name in the definition. Unique within a set. |
+| `scenario_id`, `building_id`, `controller_id` | string | Which building, and whose recorded run seeded the context |
+| `start_timestamp` | timestamp[s, UTC] | The anchor: the last history row, and the state the horizon runs from |
+| `view` | string | `perfect` or `realistic`; decides the channels below |
+| `timestep_seconds`, `max_context_steps`, `horizon_steps` | int32 | 900, 2016 and 96 in the canonical set |
+| `country`, `period_id`, `variant`, `transmission_W_m2K`, `year_start`, `year_end`, `floor_area_m2` | — | Scenario metadata, so a result row reads without a join back to the corpus |
+| `state` | struct | The current state: `STATE_CHANNELS[view]`, float32 |
+| `history` | list[struct] | `max_context_steps` rows: `timestamp` plus `history_channels(view)` |
+| `forecast` | list[struct] | `horizon_steps` rows: `timestamp` plus `DISTURBANCE_CHANNELS[view]` |
+| `plans` | list[struct] | The probes; see below |
+
+Each element of `plans` is `plan_id`, `plan_role`, and three float32 arrays of exactly
+`horizon_steps` values: `requested_control`, `applied_control`, `actual_T_room`.
+
+What the artifact fixes, and what a reader may rely on:
+
+- **Only the longest context is stored.** A shorter one is exactly its tail, which is why four
+  context lengths cost no more to compile than one.
+- **`history` ends at `start_timestamp`**, and a row pairs a state with the input that produced
+  it — one step later than `transitions/` stores the same pair.
+- **`forecast[i]` is the interval input** that, with `requested_control[i]`, produces the state
+  stamped `forecast.timestamp[i]`. Row zero is the measurement at the anchor.
+- **A plan is identified by `plan_role`, never by position.** Exactly one is `nominal`.
+- **`requested_control` is what a predictor is shown.** `applied_control` is what the actuator
+  let through; it is provenance and diagnostics, and handing it over would leak the plant's own
+  response into the question.
+
+Parquet has no second-resolution timestamp, so the file stores milliseconds and `load_cases`
+casts back to the declared type. Every stored timestamp is on the 15-minute grid, so the cast is
+exact.

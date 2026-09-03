@@ -1,19 +1,23 @@
 # `data/` — the dataset, and everything that makes it
 
-Nothing here is needed to *run* the benchmark. Evaluating a method needs only a built corpus in
-`corpus/` and the library in `../src/`. This directory exists so that the corpus is reproducible:
-`scripts/` builds `corpus/` from `source/`, and both data directories are gitignored because they
-are large and regenerable.
+The corpus is the authority on physical data, and this directory exists so that it is
+reproducible: `scripts/` builds `corpus/` from `source/`, and both data directories are
+gitignored because they are large and regenerable.
 
 ```
 data/
-  scripts/    the build pipeline; run from this directory
-  source/     what was downloaded — raw/, normalized/, manifests/   (~200 MB, gitignored)
-  corpus/     what the pipeline produced                            (~7 GB, gitignored)
+  scripts/          the build pipeline; run from this directory
+  source/           what was downloaded — raw/, normalized/, manifests/  (~200 MB, gitignored)
+  corpus/           what the pipeline produced                           (~7 GB, gitignored)
+  evaluation_sets/  the open-loop sets — definitions tracked, cases generated
 ```
 
-If you were given a corpus rather than building one, extract it into `corpus/` and stop reading:
-`load_dataset()` finds it there by default.
+Closed-loop evaluation needs a built corpus in `corpus/`; open-loop evaluation needs only a
+compiled evaluation set, which is ~20 MB and carries no corpus dependency at run time. See
+`evaluation_sets/README.md`.
+
+If you were given a corpus rather than building one, extract it into `corpus/`: `load_dataset()`
+finds it there by default.
 
 ## Building a corpus
 
@@ -61,6 +65,19 @@ finished trajectories are cached in `corpus/.staging/` and skipped on a re-run.
 uv run python scripts/finalize_benchmark_dataset.py corpus   # validate, shard, split, manifest
 uv run python scripts/finalize_benchmark_tables.py           # exogenous, forecasts, prices
 ```
+
+**5. Compile the open-loop evaluation sets.** These are what open-loop evaluation reads; the
+corpus is not touched again afterwards.
+
+```bash
+uv run python scripts/build_open_loop_cases.py \
+    evaluation_sets/open_loop/benchmark-v1/definition.yaml \
+    evaluation_sets/open_loop/benchmark-v1
+```
+
+About half an hour for 240 cases, almost all of it preparing each building's archived forecast
+runs. Repeat it whenever a definition changes — under a new set name, since a compiled set is
+immutable for a release.
 
 ## Adding excitation levels to an existing corpus
 
