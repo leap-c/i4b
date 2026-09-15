@@ -2,10 +2,10 @@
 
 ## Advanced Building Heat Pump Control Testing Framework
 
-This project features a light-weight Python-based thermal simulation framework for heat pump operation in buildings. It is particularly useful for the following tasks:
+A light-weight Python-based thermal simulation framework for heat pump operation in buildings. 
 - Serves as evaluation framework for testing different building heat pump control strategies
-- Features different detailed reduced-order models for implementing building heat pump controllers (e.g., MPC)
-- Serves as synthetic data generation framework, e.g. for ML-based controllers or anomaly detection
+- Features different detailed reduced-order models for implementing building heat pump controllers (e.g., MPC, RL)
+- Serves as synthetic thermal building data generation framework
 
 This Python project facilitates the quick generation of reduced order building models. It features a simulator class providing a high-level interface for one-step and multi-step simulations. These simulations return the next state(s) of the building (temperatures), indicators for comfort levels, and energy demand. This interface can be used to evaluate and test different control strategies. Interface to RL, MPC, and reference heat curve controller is provided. Implementation for MPC and reference heat curve is given. The project includes simple heat pump models based on performance curves for heating systems, and disturbance profiles for ambient temperature, internal heat gains by occupancy, and solar heat gains.
 
@@ -16,14 +16,15 @@ This Python project facilitates the quick generation of reduced order building m
 1. [Install Dependencies](#install-dependencies)
 2. [Building Model](#building-models)
 3. [Disturbances](#disturbances)
-4. [Controller](#controller)
-5. [Model Predictive Control (MPC)](#model-predictive-control-mpc)
-6. [Gymnasium Interface (RL)](#gymnasium-interface-rl)
-7. [Training with Stable-Baselines3](#training-with-stable-baselines3)
-8. [Using Saferl with i4b (Safe RL)](#using-saferl-with-i4b-safe-rl)
-9. [Evaluation](#evaluation)
-10. [License](#license)
-11. [Acknowledgements](#acknowledgements)
+4. [Building Data Generation](#data-generation)
+5. [Controller](#controller)
+6. [Model Predictive Control (MPC)](#model-predictive-control-mpc)
+7. [Gymnasium Interface (RL)](#gymnasium-interface-rl)
+8. [Training with Stable-Baselines3](#training-with-stable-baselines3)
+9. [Using Saferl with i4b (Safe RL)](#using-saferl-with-i4b-safe-rl)
+10. [Evaluation](#evaluation)
+11. [License](#license)
+12. [Acknowledgements](#acknowledgements)
 
 ## Install Dependencies
 
@@ -89,6 +90,19 @@ Functions are provided to generate disturbance profiles for:
 These functions generate `pandas` dataframes, where the columns correspond to individual disturbances, and the index is a `pandas.DatetimeIndex`.
 
 To manually generate disturbance profiles, start with the weather data and give each entry a `pandas.DatetimeIndex`. The datetime index is required to generate the internal and solar heat gain profiles. For the solar heat gain profiles, the weather dataframe should also contain information about solar irradiation.
+
+For a data-generation workflow across buildings, locations, years, internal gain profiles, date ranges, and building-data CSV files, see [`DATA_GENERATION.md`](DATA_GENERATION.md) and `notebooks/DataGeneration.ipynb`.
+
+## Data Generation
+
+The repo can also be used to generate synthetic building datasets that combine:
+
+- building parameters from `i4b_data/buildings/`
+- weather and disturbance generation from `i4b/disturbances.py`
+- internal gain profiles from `i4b_data/profiles/InternalGains/`
+- simulated building state and heat-pump data from `i4b/simulator.py`
+
+Use [`DATA_GENERATION.md`](DATA_GENERATION.md) as the main entry point. The companion notebook is `notebooks/DataGeneration.ipynb`, and the reusable helper functions live in `i4b/data_generation.py`.
 
 ## Controller
 
