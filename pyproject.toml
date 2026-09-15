@@ -19,4 +19,4 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["i4b", "i4b_data"]
+packages = ["i4b"]

@@ -14,7 +14,7 @@ from typing import Any
 
 import pandas as pd
 
-import i4b_data.buildings as building_catalog
+import i4b.data.buildings as building_catalog
 from i4b import disturbances
 from i4b.models import model_hvac
 from i4b.models.model_buildings import Building

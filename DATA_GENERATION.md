@@ -2,7 +2,7 @@
 
 This repo can generate synthetic building datasets by combining:
 
-- building parameters from `i4b_data/buildings/`
+- building parameters from `i4b/data/buildings/`
 - weather data loaded by `i4b/disturbances.py`
 - internal gain profiles from `data/profiles/InternalGains/`
 - solar gains computed from weather irradiance and window geometry
@@ -17,7 +17,7 @@ The saved artifact is a building data file. It includes both simulated building 
 
 ### Buildings
 
-Building parameter dictionaries live in `i4b_data/buildings/` and are exported through `data.buildings`. Building parameters are taken from Tabula WebTool, which contains a large number of archetypal buildings for different countries: https://webtool.building-typology.eu/
+Building parameter dictionaries live in `i4b/data/buildings/` and are exported through `data.buildings`. Building parameters are taken from Tabula WebTool, which contains a large number of archetypal buildings for different countries: https://webtool.building-typology.eu/
 
 Available bundled buildings:
 
@@ -91,7 +91,7 @@ T_hp_sup = max(u + T_offset, T_hp_ret)     while T_amb < T_amb_lim
 
 followed by `Heatpump.check_hp`, which clips the request to the heat-pump power range.
 
-`building_overrides` changes those building-side parameters for one run without editing `i4b_data/buildings/`:
+`building_overrides` changes those building-side parameters for one run without editing `i4b/data/buildings/`:
 
 ```python
 dg.generate_building_data_file(
@@ -211,7 +211,7 @@ location = {
 
 ## Things To Extend
 
-- Add new buildings by adding a dictionary file under `i4b_data/buildings/` and exporting it in `data/buildings/__init__.py`.
+- Add new buildings by adding a dictionary file under `i4b/data/buildings/` and exporting it in `data/buildings/__init__.py`.
 - Add new internal gain profiles as semicolon-separated CSVs with the same columns as the existing profiles.
 - Add new local weather readers for non-PVGIS CSV formats if you want to use measured or third-party weather files.
 - Add stochastic disturbances such as randomized occupancy, window opening, shading/blind control, sensor noise, or heat-pump outages.
