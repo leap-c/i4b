@@ -124,13 +124,13 @@ def plot(fig, ax, plt, tf, savename=None, folder="figures"):
 def get_all_buildings_as_dict():
     ''' Get a dictionary of all TABULA buildings in the i4b/data/buildings directory '''
 
-    path = 'i4b/data/buildings/'
+    from i4b.data import path as data_path
+
     construction_states = ['0_soc', '1_enev', '2_kfw']
     buildings = {}
-    for file in os.listdir(path):
-        if file.startswith('sfh'):
-            bldg_module_name = f'{path}{file}'.replace('/','.')[:-3]
-            building_module = import_module(bldg_module_name)
+    for file in sorted(entry.name for entry in data_path('buildings').iterdir()):
+        if file.startswith('sfh') and file.endswith('.py'):
+            building_module = import_module(f'i4b.data.buildings.{file[:-3]}')
             for construction_state in construction_states:
                 bldg_name = f'{file[:-3]}_{construction_state}'
                 building = getattr(building_module, bldg_name)

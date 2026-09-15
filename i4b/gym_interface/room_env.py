@@ -168,14 +168,10 @@ class RoomHeatEnv(gym.Env):
 
     def _load_disturbances(self, internal_gain_profile: str):
         """Load weather data and calculate total disturbances."""
-        from pathlib import Path
-        repo_root = Path(__file__).resolve().parents[2]
-        
         pos = self.building["position"]
         self.weather_data = load_weather(
             pos["lat"], pos["long"], pos["altitude"],
             tz=pos['timezone'],
-            repo_filepath=str(repo_root)
         )
         
         # Generate internal gains
