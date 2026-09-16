@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 import gymnasium as gym
@@ -33,7 +33,7 @@ class RoomHeatEnv(gym.Env):
     """
     def __init__(self,
         hp_model: str,
-        building: str,
+        building: Optional[str],
         method: str,
         mdot_HP: float,
         internal_gain_profile: str,
@@ -55,6 +55,10 @@ class RoomHeatEnv(gym.Env):
         action_deviation_factor: float = 10,
         dev_sum_weight: float = 100,
         dev_max_weight: float = 100,
+        # Injection: bring your own world instead of the catalogue and the weather files
+        building_params: Optional[Dict] = None,
+        disturbances: Optional[pd.DataFrame] = None,
+        comfort_schedule: Optional[pd.DataFrame] = None,
     ):
         """Initialize the RoomHeatEnv.
 
@@ -104,7 +108,13 @@ class RoomHeatEnv(gym.Env):
         self.method = method
         self.cost_dim = cost_dim
         self.noise_level = noise_level
-        
+        self._disturbances = disturbances
+        # A comfort band that varies with time, indexed like `disturbances` and holding
+        # T_room_set_lower / T_room_set_upper. None keeps the building's constant band. The
+        # bound in force is written onto the building model each step, which is where the cost
+        # functions read it, so they need not learn about schedules.
+        self._comfort_schedule = comfort_schedule
+
         # Goal-based learning
         self.goal_based = goal_based
         self.goal_temp_range = goal_temp_range
@@ -114,11 +124,13 @@ class RoomHeatEnv(gym.Env):
         self.temp_deviation_weight = temp_deviation_weight
         
         # Initialize building model
-        if building not in BUILDING_NAMES2CLASS.keys():
-            raise ValueError(f"Building {building} not in the list of available buildings")
-        
-        print(f"Building {building} is selected")
-        self.building = BUILDING_NAMES2CLASS[building]
+        if building_params is None:
+            if building not in BUILDING_NAMES2CLASS.keys():
+                raise ValueError(f"Building {building} not in the list of available buildings")
+            print(f"Building {building} is selected")
+            self.building = BUILDING_NAMES2CLASS[building]
+        else:
+            self.building = dict(building_params)
         self.bldg_model = Building(
             params=self.building,
             mdot_hp=mdot_HP,
@@ -146,17 +158,19 @@ class RoomHeatEnv(gym.Env):
         self.action_low = 20.0  # Minimum supply temperature [°C]
         self.action_high = 65.0  # Maximum supply temperature [°C]
 
+        # Episode length, before the disturbances load: an injected series is cut to it.
+        self.days = days
+
         # Load weather and disturbances
         self._load_disturbances(internal_gain_profile)
-        
+
         # Define observation space
         self.obs_keys = self.bldg_model.state_keys
         self.p_keys = ["T_amb", "Qdot_gains"]
         self.weather_forecast_steps = weather_forecast_steps
         self.observation_space = self._create_observation_space()
-        
+
         # Episode management
-        self.days = days
         self.max_t = self._calculate_max_timesteps()
         self.random_init = random_init
         self.t = 0  # Current timestep in weather data
@@ -168,6 +182,25 @@ class RoomHeatEnv(gym.Env):
 
     def _load_disturbances(self, internal_gain_profile: str):
         """Load weather data and calculate total disturbances."""
+        if self._disturbances is not None:
+            required = ["T_amb", "Qdot_gains"]
+            if set(self._disturbances.columns) != set(required):
+                raise ValueError(f"disturbances must have exactly these columns: {required}")
+            if not isinstance(self._disturbances.index, pd.DatetimeIndex):
+                raise ValueError("disturbance index must be a DatetimeIndex")
+            if str(self._disturbances.index.tz) != "UTC":
+                raise ValueError("disturbance index must use UTC")
+            if self._disturbances.index.has_duplicates or not self._disturbances.index.is_monotonic_increasing:
+                raise ValueError("disturbance timestamps must be unique and increasing")
+            intervals = self._disturbances.index.to_series().diff().dropna()
+            if not intervals.eq(pd.Timedelta(seconds=self.delta_t)).all():
+                raise ValueError(f"disturbances must use a {self.delta_t}-second interval")
+            self.p = self._disturbances[required].astype(np.float32).copy()
+            if self.days is not None:
+                max_steps = int(self.days * 24 * (3600 / self.delta_t))
+                self.p = self.p.iloc[:max_steps]
+            return
+
         pos = self.building["position"]
         self.weather_data = load_weather(
             pos["lat"], pos["long"], pos["altitude"],
@@ -317,10 +350,20 @@ class RoomHeatEnv(gym.Env):
         # Get current state
         state_dict = {key: value for key, value in zip(self.obs_keys, self.state[:len(self.obs_keys)])}
         pk = self.get_cur_p()
+        self._apply_comfort_schedule()
         
         # Convert normalized action to physical setpoint
         T_hp_sup_set = self.restore_action(a)
-        
+        # What the controller asked for, before the actuator has its say. Three rules below
+        # rewrite it as a function of the state -- the summer cutoff, the floor at the return
+        # temperature, and `check_hp`'s dead band -- and the last of those encodes "no heat" as
+        # "supply equals return". So the applied value is a copy of a state on a large share of
+        # steps, which makes it useless as a control signal there and, worse, a readout of
+        # `T_hp_ret`, a channel the model is asked to predict. The request keeps what the
+        # actuator discards; it is also what an evaluation hands a predictor, so recording it is
+        # what lets training and evaluation condition on the same thing.
+        T_hp_sup_requested = float(T_hp_sup_set)
+
         # Apply heating logic
         if pk['T_amb'] < self.bldg_model.params['T_amb_lim']:
             # Normal heating: apply offset and ensure supply > return
@@ -360,9 +403,19 @@ class RoomHeatEnv(gym.Env):
             "Q_el_kWh": float(costs["E_el"]),
             "dev_sum": float(costs["dev_neg_sum"]),
             "dev_max": float(costs["dev_neg_max"]),
+            # Overheating, computed by every cost path and previously discarded. Not scored --
+            # a heat pump can only add heat -- but a corpus that records it can be re-scored
+            # under a different comfort convention without re-simulating.
+            "dev_pos_sum": float(costs["dev_pos_sum"]),
+            "dev_pos_max": float(costs["dev_pos_max"]),
             "t": int(self.t),
             "u": float(T_hp_sup_set),
+            #: The commanded setpoint, before the actuator rewrote it. `u` is what was applied.
+            "u_requested": T_hp_sup_requested,
             "T_room": float(next_state['T_room']),
+            # The band this step was scored against; constant unless a schedule was given.
+            "T_room_set_lower": float(self.bldg_model.T_room_set_lower),
+            "T_room_set_upper": float(self.bldg_model.T_room_set_upper),
         }
         
         if self.goal_based:
@@ -432,6 +485,19 @@ class RoomHeatEnv(gym.Env):
     def get_cur_Qdot_gains(self) -> float:
         """Get current total heat gains in W."""
         return float(self.p.iloc[self.t]['Qdot_gains'])
+
+    def _apply_comfort_schedule(self) -> None:
+        """Put the bound in force for this step onto the building model.
+
+        The cost functions read `T_room_set_lower` / `T_room_set_upper` off the building at the
+        moment they score, so writing them here is what makes a time-varying band work for the
+        legacy and the JAX paths alike.
+        """
+        if self._comfort_schedule is None:
+            return
+        row = self._comfort_schedule.iloc[min(self.t, len(self._comfort_schedule) - 1)]
+        self.bldg_model.T_room_set_lower = float(row['T_room_set_lower'])
+        self.bldg_model.T_room_set_upper = float(row['T_room_set_upper'])
 
     def get_cur_p(self) -> Dict:
         """Return current disturbances as a dict (T_amb, Qdot_gains)."""
