@@ -67,11 +67,14 @@ class Model_simulator:
         input_values = [[input_dict[key] for key in input_keys]]
         
         # Compute next state
+        # Evenly spaced outputs: the step's energy is their plain mean (calc_cost), so the
+        # solver's own adaptive points would weight it unevenly.
         ode_result_obj = solve_ivp(self.bldg_model.calc,
                                    [0, self.timestep],
                                    x_init_np,
                                    args = input_values,
-                                   method = 'LSODA')
+                                   method = 'LSODA',
+                                   t_eval = np.linspace(0, self.timestep, 31))
         """ Integration method to use:
         'RK45' : Explicit Runge-Kutta method of order 5(4) [1]. The error is controlled assuming accuracy of the fourth-order method, but steps are taken using the fifth-order accurate formula (local extrapolation is done). A quartic interpolation polynomial is used for the dense output [2]. Can be applied in the complex domain.
         'LSODA' (default): Adams/BDF method with automatic stiffness detection and switching [7], [8]. This is a wrapper of the Fortran solver from ODEPACK.
