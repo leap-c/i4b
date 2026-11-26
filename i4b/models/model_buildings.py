@@ -692,8 +692,10 @@ class Building:
             return self.calc_4r3c_casadi(x, u, p)
         elif self.method == '5R4C':
             return self.calc_5r4c_casadi(x, u, p)
+        elif self.method == '7R5C':
+            return self.calc_7r5c_casadi(x, u, p)
         else:
-            print("Casadi calculation method does not exist")       
+            print("Casadi calculation method does not exist")
 
     def calc_2r2c_casadi(self, x, u, p):
         ''' This function contains the same building model as the fuction calc_2r2c.
@@ -828,6 +830,64 @@ class Building:
                 - self.params['H_rad_con'] * (T_hp_ret - T_room)) # T_hp_ret [degC/s]
 
         return rhs
+
+    def calc_7r5c_casadi(self, x, u, p):
+        ''' The building model of calc_7r5c as CasADi expressions, for use in an MPC.
+        Check out calc_7r5c for the equations and the state and input vectors.
+
+        x[2] (T_op) is not a dynamic state: as in calc_7r5c its derivative is zero, and
+        the operative temperature is computed from the others after a step.
+
+        Parameters
+        ----------
+        x : casadi.SX, (6,)
+            [T_room, T_surf_wall, T_op, T_mass, T_surf_floor, T_hp_ret] [degC]
+        u : casadi.SX
+            Heatpump supply temperature [degC]
+        p : casadi.SX, (4,)
+            [T_amb [degC], Qdot_gains [W] (unused), Qdot_int [W], Qdot_sol [W]]
+
+        Returns
+        -------
+        casadi.SX, (6,): the right hand side [degC/s]
+        '''
+        T_room       = x[0]
+        T_surf_wall  = x[1]
+        T_mass       = x[3]
+        T_surf_floor = x[4]
+        T_hp_ret     = x[5]
+        T_hp_sup     = u
+        T_amb        = p[0]
+        Qdot_int     = p[2]
+        Qdot_sol     = p[3]
+
+        f_mass = self.params['A_mass'] / self.params['A_surf']
+        f_floor = self.params['area_floor'] / self.params['A_surf']
+        Qdot_gain2air = 0.5 * Qdot_int
+        Qdot_gain2mass = f_mass * (0.5 * Qdot_int + Qdot_sol)
+        Qdot_gain2surf = (1 - f_mass - (self.params['H_tr_light'] / (9.1 * self.params['A_surf']))) * (0.5 * Qdot_int + Qdot_sol)
+        Qdot_gain2surf_floor = f_floor * Qdot_gain2surf
+        Qdot_gain2surf_wall = (1 - f_floor) * Qdot_gain2surf
+
+        H_air2surf_wall = H_AIR2SURF * self.params['A_surf'] * (1 - f_floor)
+        H_tr_int = H_TR_INT * self.params['A_mass']
+        H_tr_ext = 1 / ((1 / self.params['H_tr_heavy']) - (1 / H_tr_int))
+
+        Qdot_tr_int = H_tr_int * (T_surf_wall - T_mass)
+        Qdot_tr_ext = H_tr_ext * (T_mass - T_amb)
+        Qdot_hvac = self.mdot_hp * C_WATER_SPEC * (T_hp_sup - T_hp_ret)
+        Qdot_air2surf_wall = H_air2surf_wall * (T_room - T_surf_wall)
+        Qdot_surf2air_floor = self.params['H_con_floor'] * (T_surf_floor - T_room)
+        Qdot_tr_floor = self.params['H_tr_floor'] * (T_hp_ret - T_surf_floor)
+
+        return cas.vertcat(
+            1 / self.params['C_air'] * (Qdot_gain2air + Qdot_surf2air_floor - self.params['H_ve'] * (T_room - T_amb) - Qdot_air2surf_wall),
+            1 / self.params['C_surf_wall'] * (Qdot_gain2surf_wall + Qdot_air2surf_wall - self.params['H_tr_light'] * (T_surf_wall - T_amb) - Qdot_tr_int),
+            0 * T_room,  # T_op: no dynamics, see calc_7r5c
+            1 / self.params['C_bldg_heavy'] * (Qdot_gain2mass + Qdot_tr_int - Qdot_tr_ext),
+            1 / self.params['C_surf_floor'] * (Qdot_gain2surf_floor + Qdot_tr_floor - Qdot_surf2air_floor),
+            1 / self.params['C_water'] * (Qdot_hvac - Qdot_tr_floor),
+        )
 
     def calc_comfort_dev(self, T_room, timestep):
         """ Calculation of the comfort deviation of the building between
