@@ -588,7 +588,7 @@ class Building:
         :math:`\dot{T}_{surf}^{wall} = 1 / C_{surf}^{wall} \cdot (\dot{Q}_{gain2surf}^{wall} + \dot{Q}_{air2surf}^{wall} - \dot{Q}_{tr,light} - \dot{Q}_{tr,int})`
         :math:`\dot{T}_{mass} = 1 / C_{bldg,heavy} \cdot (\dot{Q}_{gain2mass} + \dot{Q}_{tr,int} - \dot{Q}_{tr,ext})`
         :math:`\dot{T}_{surf}^{floor} = 1 / C_{surf}^{floor} \cdot (\dot{Q}_{gain2surf}^{floor} + \dot{Q}_{tr,floor} - \dot{Q}_{surf2air}^{floor})`
-        :math:`\dot{T}_{HP} = 1 / (C_{water} - C_{surf}^{floor}) \cdot (\dot{Q}_{hp} - \dot{Q}_{tr,floor}))`
+        :math:`\dot{T}_{HP} = 1 / C_{water} \cdot (\dot{Q}_{hp} - \dot{Q}_{tr,floor})`
 
         with
 
