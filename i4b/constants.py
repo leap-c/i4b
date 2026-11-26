@@ -6,7 +6,7 @@ Shared physical constants for the project.
 RHO_WATER = 997      # Density water [kg/m3]
 RHO_AIR = 1.225      # Density air [kg/m3]
 C_WATER_SPEC = 4181  # Spec. heat capacity of water [J/kg/K]
-C_AIR_SPEC = 1.005   # Spec. heat capacity of air [J/kg/K]
+C_AIR_SPEC = 1005    # Spec. heat capacity of air [J/kg/K]
 
 # Building constants
 C_INT_SPEC = 10000    # [J/m^2/K]
