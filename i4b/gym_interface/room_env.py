@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 import i4b.models.model_hvac as model_hvac
+from i4b.data import path as data_path
 from i4b.simulator import Model_simulator
 from i4b.models.model_buildings import Building
 from i4b.gym_interface import BUILDING_NAMES2CLASS
@@ -11,7 +13,22 @@ from i4b.gym_interface.constant import OBSERVATION_SPACE_LIMIT
 from i4b.disturbances import load_weather, get_solar_gains, get_int_gains
 
 
-class RoomHeatEnv(gym.Env):   
+def resolve_profile_path(profile: str) -> Path:
+    """Locate an internal-gains profile CSV.
+
+    ``i4b/data/...`` paths (the form the examples pass) resolve against the
+    installed package, so they work from any working directory. Absolute paths
+    are used as given, any other relative path against the working directory.
+    """
+    profile_path = Path(profile)
+    if profile_path.is_absolute():
+        return profile_path
+    if profile_path.parts[:2] == ("i4b", "data"):
+        return data_path(*profile_path.parts[2:])
+    return profile_path
+
+
+class RoomHeatEnv(gym.Env):
     """Gymnasium environment for room heating control using the i4b simulator.
 
     This environment exposes a heat-pump controlled building thermal model to
@@ -73,7 +90,9 @@ class RoomHeatEnv(gym.Env):
         mdot_HP : float
             Mass flow rate of the heat supply system in kg/s.
         internal_gain_profile : str
-            Relative path to internal gains profile CSV under the repo root.
+            Internal gains profile CSV, e.g.
+            ``i4b/data/profiles/InternalGains/ResidentialDetached.csv``
+            (resolved against the installed package, see `resolve_profile_path`).
         weather_forecast_steps : List[int]
             Steps ahead (in multiples of delta_t) to append T_amb forecasts.
         delta_t : int
@@ -210,7 +229,7 @@ class RoomHeatEnv(gym.Env):
         # Generate internal gains
         self.internal_gains_df = get_int_gains(
             time=self.weather_data.index,
-            profile_path=str(repo_root / internal_gain_profile),
+            profile_path=str(resolve_profile_path(internal_gain_profile)),
             bldg_area=self.building['area_floor']
         )
         
