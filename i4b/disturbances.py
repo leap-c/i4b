@@ -552,7 +552,9 @@ def get_solar_gains(weather, bldg_params, albedo = 0.2):
         poa_global = poa.poa_global.fillna(0)
 
         # Caculate solar gains for window and store sum of all windows
-        Qdot_sol += window['area'] * window['g_value'] * poa_global * (1 - window['c_frame'] * window['c_shade']) # [W]
+        # Glazed share (1 - c_frame) times the shading factor c_shade (the transmitted fraction,
+        # TABULA's F_sh: 0.6 by default, higher means less shade).
+        Qdot_sol += window['area'] * window['g_value'] * poa_global * (1 - window['c_frame']) * window['c_shade'] # [W]
 
     return Qdot_sol
 
